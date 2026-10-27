@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.sheet-table th,
+.sheet-table td {
+  border-right: 1px solid rgba(128, 128, 145, 0.16);
+  border-bottom: 1px solid rgba(128, 128, 145, 0.16);
+}
+
+html.dark .sheet-table th,
+html.dark .sheet-table td {
+  border-right: 1px solid #1f1f29;
+  border-bottom: 1px solid #1f1f29;
+}
+
+.sticky-col-1 {
+  position: sticky;
+  left: 0;
+  z-index: 15;
+}
+
+.sticky-col-2 {
+  position: sticky;
+  left: 36px;
+  z-index: 15;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(110, 110, 130, 0.28);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(109, 40, 217, 0.55);
+}
+
+/* Phone-first foundations */
+html, body { height: 100%; }
+#root {
+  height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* iOS zooms into any field under 16px */
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
+:focus-visible { outline: 2px solid #8b5cf6; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

@@ -1,0 +1,3291 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LNATK — Attendance & Duty Workspace</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f6f4ff',
+              100: '#ede9fe',
+              200: '#ddd6fe',
+              300: '#c4b5fd',
+              400: '#a78bfa',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              800: '#5b21b6',
+              900: '#4c1d95',
+              950: '#2e1065',
+            },
+            obsidian: {
+              950: '#09090b',
+              900: '#0e0e12',
+              850: '#14141a',
+              800: '#1c1c24',
+              700: '#262632',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    /* Crisp spreadsheet table styling */
+    .sheet-table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .sheet-table th,
+    .sheet-table td {
+      border-right: 1px solid rgba(128, 128, 145, 0.16);
+      border-bottom: 1px solid rgba(128, 128, 145, 0.16);
+    }
+    html.dark .sheet-table th,
+    html.dark .sheet-table td {
+      border-right: 1px solid #1f1f29;
+      border-bottom: 1px solid #1f1f29;
+    }
+    .sticky-col-1 {
+      position: sticky;
+      left: 0;
+      z-index: 15;
+    }
+    .sticky-col-2 {
+      position: sticky;
+      left: 36px;
+      z-index: 15;
+    }
+    /* Subtle custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(110, 110, 130, 0.28);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(109, 40, 217, 0.55);
+    }
+  </style>
+</head>
+<body class="h-screen overflow-hidden bg-white dark:bg-obsidian-950 text-zinc-900 dark:text-zinc-100 flex select-none">
+
+  <!-- MOBILE SIDEBAR BACKDROP -->
+  <div id="mobileSidebarBackdrop" class="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs hidden lg:hidden"></div>
+
+  <!-- =================================================================== -->
+  <!-- LEFT SIDEBAR NAVIGATION                                             -->
+  <!-- =================================================================== -->
+  <aside id="appSidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-64 shrink-0 bg-zinc-50 dark:bg-obsidian-900 border-r border-zinc-200 dark:border-obsidian-800 flex flex-col justify-between transition-transform duration-200 -translate-x-full lg:translate-x-0">
+
+    <!-- Top Brand & Workspace Selector -->
+    <div class="flex flex-col flex-1 min-h-0">
+      <div class="h-14 px-4 border-b border-zinc-200 dark:border-obsidian-800 flex items-center justify-between">
+        <button id="brandHomeBtn" type="button" class="flex items-center gap-2.5 text-left focus:outline-none group">
+          <div class="w-7 h-7 rounded-lg bg-brand-800 dark:bg-brand-700 text-white flex items-center justify-center font-mono font-bold text-xs tracking-tighter shadow-xs group-hover:bg-brand-700 transition-colors">
+            TK
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-semibold text-sm tracking-tight text-zinc-950 dark:text-white">LNATK</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-brand-950/10 dark:bg-brand-400/10 text-brand-800 dark:text-brand-300 font-medium">District</span>
+            </div>
+          </div>
+        </button>
+        <button id="closeMobileSidebarBtn" type="button" class="lg:hidden p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Portal Mode Switcher (Hidden so users cannot jump roles without logging in) -->
+      <div class="hidden p-3 border-b border-zinc-200 dark:border-obsidian-800">
+        <div class="text-[10px] font-mono uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5 px-1">Portal Mode</div>
+        <div class="grid grid-cols-2 gap-1 p-1 rounded-lg bg-zinc-200/70 dark:bg-obsidian-950 border border-zinc-200/80 dark:border-obsidian-800">
+          <button type="button" data-role-nav="officer" class="role-pill py-1.5 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1">
+            <span>Officer</span>
+          </button>
+          <button type="button" data-role-nav="tk" class="role-pill py-1.5 px-2 rounded-md text-xs font-medium transition-all text-center">
+            Member
+          </button>
+          <button type="button" data-role-nav="coordinator" class="role-pill py-1.5 px-2 rounded-md text-xs font-medium transition-all text-center">
+            Coordinator
+          </button>
+          <button type="button" data-role-nav="landing" class="role-pill py-1.5 px-2 rounded-md text-xs font-medium transition-all text-center">
+            Overview
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Navigation & 18-Locale Tree -->
+      <div class="flex-1 overflow-y-auto px-2.5 py-3 space-y-5">
+
+        <!-- Officer Workspace Modules -->
+        <div id="sidebarOfficerNavSection" class="space-y-0.5">
+          <div class="px-2 pb-1.5 text-[10px] font-mono uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Workspace</div>
+
+          <button type="button" data-officer-tab="grid" class="officer-tab-btn w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors">
+            <span class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+              <span>Duty Sheet</span>
+            </span>
+            <span class="text-[10px] font-mono opacity-60">Oct '26</span>
+          </button>
+
+          <button type="button" data-officer-tab="dashboard" class="officer-tab-btn w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors">
+            <span class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+              <span>District Rollup</span>
+            </span>
+          </button>
+
+          <button type="button" data-officer-tab="inbox" class="officer-tab-btn w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors">
+            <span class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+              <span>Viewing Inbox & Live</span>
+            </span>
+            <span id="officerTabInboxBadge" class="px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-brand-800 text-white">3</span>
+          </button>
+
+          <button type="button" data-officer-tab="admin" class="officer-tab-btn w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors">
+            <span class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Sessions & Roster</span>
+            </span>
+          </button>
+
+          <button type="button" data-officer-tab="reports" class="officer-tab-btn w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors">
+            <span class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <span>Reports & Export</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Locales Tree in Sidebar (Santa Rosa, Biñan, San Pedro) -->
+        <div class="space-y-3 pt-2 border-t border-zinc-200 dark:border-obsidian-800">
+          <div class="px-2 flex items-center justify-between">
+            <span class="text-[10px] font-mono uppercase tracking-wider text-zinc-400 dark:text-zinc-500">18 Locales</span>
+            <span class="text-[10px] font-mono text-zinc-400">3 Cities</span>
+          </div>
+          <div id="sidebarLocalesTree" class="space-y-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Footer: Officer Profile & Theme Switcher -->
+    <div class="p-3 border-t border-zinc-200 dark:border-obsidian-800 bg-zinc-100/60 dark:bg-obsidian-950/60 space-y-2.5">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-6 h-6 rounded-full bg-brand-800 text-white font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
+            DR
+          </div>
+          <div class="truncate">
+            <p id="officerActiveEmail" class="text-xs font-medium text-zinc-900 dark:text-zinc-200 truncate">Daniel Reyes</p>
+            <p class="text-[10px] text-zinc-500 truncate">District Officer</p>
+          </div>
+        </div>
+
+        <!-- Clean Light/Dark Mode Toggle -->
+        <button id="themeToggleBtn" type="button" aria-label="Toggle Light and Dark Mode" class="px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-white dark:bg-obsidian-900 hover:border-brand-600 dark:hover:border-brand-500 text-zinc-800 dark:text-zinc-200 text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0">
+          <span id="themeIconSun" class="hidden dark:inline-flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-brand-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <span class="text-[11px]">Light</span>
+          </span>
+          <span id="themeIconMoon" class="inline-flex dark:hidden items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-brand-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <span class="text-[11px]">Dark</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- =================================================================== -->
+  <!-- MAIN WORKSPACE AREA                                                 -->
+  <!-- =================================================================== -->
+  <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+
+    <!-- Minimal Top Context Bar -->
+    <header class="h-14 shrink-0 border-b border-zinc-200 dark:border-obsidian-800 bg-white dark:bg-obsidian-950 px-4 sm:px-6 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <button id="openMobileSidebarBtn" type="button" class="lg:hidden p-1.5 rounded-lg border border-zinc-200 dark:border-obsidian-800 text-zinc-600 dark:text-zinc-300">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="flex items-center gap-2 text-xs sm:text-sm truncate">
+          <span id="topBreadcrumbCity" class="text-zinc-400 dark:text-zinc-500 font-medium">Santa Rosa</span>
+          <span class="text-zinc-300 dark:text-zinc-700">/</span>
+          <span id="topBreadcrumbTitle" class="font-semibold text-zinc-950 dark:text-white truncate">Dila — Regular Duty Sheet</span>
+          <span id="topBreadcrumbCode" class="hidden sm:inline-block font-mono text-[11px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-obsidian-850 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-obsidian-800">SR-DILA</span>
+        </div>
+      </div>
+
+      <!-- Right Context Controls -->
+      <div class="flex items-center gap-2.5">
+        <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800 text-xs">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand-600 dark:bg-brand-400"></span>
+          <span class="text-zinc-400 text-[11px]">Window:</span>
+          <select id="simTimeWindowSelect" aria-label="Simulate Philippine Time Window" class="bg-transparent font-mono text-[11px] font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none cursor-pointer">
+            <option value="tg_live" class="bg-white dark:bg-obsidian-900">Sat 2:45 PM (TG Live)</option>
+            <option value="tg_viewing" class="bg-white dark:bg-obsidian-900">Sun 7:15 PM (TG Viewing)</option>
+            <option value="pm_open" class="bg-white dark:bg-obsidian-900">Wed 8:00 AM (PM Open)</option>
+            <option value="spbb_open" class="bg-white dark:bg-obsidian-900">Fri 5:00 PM (SPBB D1)</option>
+          </select>
+        </div>
+
+        <button id="openSupabaseModalBtn" type="button" class="px-2.5 py-1 rounded-lg border border-brand-600/40 bg-brand-500/10 hover:bg-brand-500/20 text-xs font-medium text-brand-800 dark:text-brand-300 transition-colors flex items-center gap-1.5">
+          <span id="supabaseStatusDot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+          <span id="supabaseStatusLabel">Backend &amp; SQL</span>
+        </button>
+        <button id="topSwitchRoleBtn" type="button" class="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-obsidian-800 hover:border-brand-600 text-xs font-medium text-zinc-600 dark:text-zinc-300 transition-colors">
+          Log-In Screen
+        </button>
+        <span id="headerPendingBadge" class="hidden">3</span>
+      </div>
+    </header>
+
+    <!-- Main Scrollable Viewport -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6">
+
+      <!-- =============================================================== -->
+      <!-- VIEW 1: CENTERED LOG-IN SCREEN (MATCHING SKETCH)                -->
+      <!-- =============================================================== -->
+      <section id="view-landing" class="min-h-[calc(100vh-6.5rem)] flex flex-col items-center justify-center py-6 px-4">
+        <div class="w-full max-w-sm space-y-5">
+          <!-- Top Title -->
+          <div class="text-center space-y-1.5">
+            <div class="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-brand-800 text-white font-mono font-bold text-sm shadow-md shadow-brand-900/30 mb-1">
+              TK
+            </div>
+            <h1 class="text-xl font-bold tracking-widest uppercase text-zinc-950 dark:text-white">
+              Log-In
+            </h1>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">
+              LNATK District Attendance Platform
+            </p>
+          </div>
+
+          <!-- Centered Rounded Box with Stacked Roles (Matches Sketch) -->
+          <div class="rounded-[28px] border-2 border-zinc-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-900 shadow-2xl overflow-hidden transition-all">
+
+            <!-- STEP A: 3 Stacked Role Rows (Regular TK / Coordinator / Officer) -->
+            <div id="loginRoleStack" class="divide-y-2 divide-zinc-200 dark:divide-obsidian-800">
+              <button type="button" data-login-pick="tk" class="w-full py-6 px-6 text-center hover:bg-brand-50/60 dark:hover:bg-brand-950/30 transition-colors group flex flex-col items-center justify-center gap-1">
+                <span class="text-lg font-semibold tracking-tight text-zinc-950 dark:text-white group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+                  Regular TK
+                </span>
+                <span class="text-[11px] text-zinc-400 dark:text-zinc-500">
+                  Select your city &amp; locale · View &amp; edit locale table
+                </span>
+              </button>
+
+              <button type="button" data-login-pick="coordinator" class="w-full py-6 px-6 text-center hover:bg-brand-50/60 dark:hover:bg-brand-950/30 transition-colors group flex flex-col items-center justify-center gap-1">
+                <span class="text-lg font-semibold tracking-tight text-zinc-950 dark:text-white group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+                  Coordinator
+                </span>
+                <span class="text-[11px] text-zinc-400 dark:text-zinc-500">
+                  Locale code + PIN · Submit TG duty roster to table
+                </span>
+              </button>
+
+              <button type="button" data-login-pick="officer" class="w-full py-6 px-6 text-center hover:bg-brand-50/60 dark:hover:bg-brand-950/30 transition-colors group flex flex-col items-center justify-center gap-1">
+                <span class="text-lg font-semibold tracking-tight text-zinc-950 dark:text-white group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+                  Officer
+                </span>
+                <span class="text-[11px] text-zinc-400 dark:text-zinc-500">
+                  District login · Full access to all 18 locales
+                </span>
+              </button>
+            </div>
+
+            <!-- STEP B1: Regular TK City & Locale Dropdown Selector -->
+            <div id="loginFormTk" class="hidden p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <button type="button" data-login-back="true" class="text-xs font-medium text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1">
+                  <span>← Back</span>
+                </button>
+                <span class="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-400">Regular TK</span>
+              </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label for="loginTkCitySelect" class="block text-xs font-medium text-zinc-600 dark:text-zinc-300 mb-1">Select City</label>
+                  <select id="loginTkCitySelect" class="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-semibold text-zinc-950 dark:text-white focus:outline-none focus:border-brand-600">
+                    <option value="Santa Rosa">Santa Rosa</option>
+                    <option value="Biñan">Biñan</option>
+                    <option value="San Pedro">San Pedro</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="loginTkLocaleSelect" class="block text-xs font-medium text-zinc-600 dark:text-zinc-300 mb-1">Select Locale</label>
+                  <select id="loginTkLocaleSelect" class="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-semibold text-zinc-950 dark:text-white focus:outline-none focus:border-brand-600"></select>
+                </div>
+              </div>
+
+              <!-- Keep hidden input & sample hooks for backward compatibility -->
+              <div class="hidden">
+                <input id="loginTkCodeInput" type="text" value="SR-DILA" />
+                <button type="button" data-login-sample="SR-DILA" class="login-sample-chip">SR-DILA</button>
+                <button type="button" data-login-sample="SR-SROS" class="login-sample-chip">SR-SROS</button>
+                <button type="button" data-login-sample="BN-CNLY" class="login-sample-chip">BN-CNLY</button>
+                <button type="button" data-login-sample="SP-CLND" class="login-sample-chip">SP-CLND</button>
+              </div>
+
+              <button id="loginTkContinueBtn" type="button" class="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold transition-colors">
+                Enter Locale Table
+              </button>
+            </div>
+
+            <!-- STEP B2: Coordinator Code + PIN Prompt -->
+            <div id="loginFormCoordinator" class="hidden p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <button type="button" data-login-back="true" class="text-xs font-medium text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1">
+                  <span>← Back</span>
+                </button>
+                <span class="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-400">Coordinator</span>
+              </div>
+              <div class="space-y-3">
+                <div>
+                  <label for="loginCoordCodeInput" class="block text-xs font-medium text-zinc-600 dark:text-zinc-300 mb-1">Locale Access Code</label>
+                  <input id="loginCoordCodeInput" type="text" value="SR-DILA" class="w-full px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 font-mono text-xs uppercase text-zinc-950 dark:text-white focus:outline-none focus:border-brand-600" />
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-xs mb-1">
+                    <label for="loginCoordPinInput" class="font-medium text-zinc-600 dark:text-zinc-300">Coordinator PIN</label>
+                    <span class="font-mono text-[10px] text-zinc-400">Demo: 1234</span>
+                  </div>
+                  <input id="loginCoordPinInput" type="password" value="1234" maxlength="6" class="w-full px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 font-mono text-xs text-zinc-950 dark:text-white focus:outline-none focus:border-brand-600" />
+                </div>
+              </div>
+              <button id="loginCoordContinueBtn" type="button" class="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold transition-colors">
+                Unlock Coordinator Table
+              </button>
+            </div>
+
+            <!-- STEP B3: Officer Email Login Prompt -->
+            <div id="loginFormOfficer" class="hidden p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <button type="button" data-login-back="true" class="text-xs font-medium text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1">
+                  <span>← Back</span>
+                </button>
+                <span class="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-400">District Officer</span>
+              </div>
+              <div class="space-y-3">
+                <div>
+                  <label for="loginOfficerEmailInput" class="block text-xs font-medium text-zinc-600 dark:text-zinc-300 mb-1">Officer Email (Invite-Only)</label>
+                  <input id="loginOfficerEmailInput" type="email" value="daniel.reyes@lnatk-district.org" class="w-full px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs text-zinc-950 dark:text-white focus:outline-none focus:border-brand-600" />
+                </div>
+                <div>
+                  <label for="loginOfficerPassInput" class="block text-xs font-medium text-zinc-600 dark:text-zinc-300 mb-1">Password</label>
+                  <input id="loginOfficerPassInput" type="password" value="••••••••••••" class="w-full px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs text-zinc-950 dark:text-white focus:outline-none focus:border-brand-600" />
+                </div>
+              </div>
+              <button id="loginOfficerContinueBtn" type="button" class="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold transition-colors">
+                Sign In to Officer Workspace
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Demo Bypass Links (preserved for instant testing) -->
+          <div class="hidden items-center justify-center gap-3 text-[11px] text-zinc-400">
+            <span>Quick jump:</span>
+            <button type="button" data-goto-role="tk" class="hover:text-brand-600 dark:hover:text-brand-400 underline">Member Check-In</button>
+            <span>·</span>
+            <button type="button" data-goto-role="coordinator" class="hover:text-brand-600 dark:hover:text-brand-400 underline">Coordinator PIN</button>
+            <span>·</span>
+            <button type="button" data-goto-role="officer" class="hover:text-brand-600 dark:hover:text-brand-400 underline">Open Duty Sheet</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- VIEW 2: REGULAR TK MEMBER VIEW (CLEAN TABLE & LOCALE STATUS)    -->
+      <!-- =============================================================== -->
+      <section id="view-tk" class="hidden space-y-4">
+        <!-- Clean Locale Selector & Status Summary Bar (No input clutter!) -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- City Dropdown (Santa Rosa, Biñan, San Pedro) -->
+            <select id="tkViewCitySelect" aria-label="Select City" class="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-brand-600">
+              <option value="Santa Rosa">Santa Rosa</option>
+              <option value="Biñan">Biñan</option>
+              <option value="San Pedro">San Pedro</option>
+            </select>
+
+            <!-- Locale Dropdown (Per Selected City) -->
+            <select id="tkViewLocaleSelect" aria-label="Select Locale" class="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs font-semibold text-zinc-950 dark:text-white focus:outline-none focus:border-brand-600"></select>
+
+            <!-- Member Name Filter -->
+            <input id="tkViewSearchMember" type="text" placeholder="Find your name..." class="px-3 py-1.5 w-44 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs text-zinc-950 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:border-brand-600" />
+          </div>
+
+          <!-- Locale Status Summary Pills -->
+          <div id="tkLocaleStatusSummaryPills" class="flex flex-wrap items-center gap-1.5 text-xs"></div>
+        </div>
+
+        <!-- Member Read-Only Locale Regular Duty Table -->
+        <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden shadow-xs">
+          <div class="px-4 py-2.5 bg-zinc-50 dark:bg-obsidian-900 border-b border-zinc-200 dark:border-obsidian-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-zinc-900 dark:text-white" id="tkTableLocaleHeading">Locale Regular Duty Sheet</span>
+              <span id="tkResolvedLocaleBadge" class="font-mono text-[11px] px-2 py-0.5 rounded bg-brand-500/10 text-brand-700 dark:text-brand-300 font-medium"></span>
+            </div>
+            <span class="font-mono text-[11px] text-brand-700 dark:text-brand-300 bg-brand-500/10 px-2 py-0.5 rounded">Regular TK · Click Any Cell to Edit</span>
+          </div>
+          <div class="overflow-x-auto" id="tkSharedSheetContainer"></div>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- VIEW 3: COORDINATOR PORTAL (ENTRY FORM + BATCH + LIVE TABLE)    -->
+      <!-- =============================================================== -->
+      <section id="view-coordinator" class="hidden space-y-4">
+
+        <!-- Legacy Single-Entry Controls Hidden (Unified into Batch TG Roster + Direct Table Edit) -->
+        <div class="hidden">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 dark:border-obsidian-800 pb-3">
+            <div>
+              <h2 class="text-sm font-semibold text-zinc-950 dark:text-white">Coordinator Attendance &amp; Viewing Entry</h2>
+              <p class="text-xs text-zinc-500 mt-0.5">Coordinators input who will perform duty in TG (or log Viewing / PM / WS status for a member) and submit directly to the locale table.</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="hidden">
+                <input id="tkLocaleCodeInput" type="text" value="SR-DILA" />
+                <button id="tkVerifyLocaleBtn" type="button">Load Locale</button>
+                <button type="button" data-sample-code="SR-DILA" class="tk-sample-code">SR-DILA</button>
+                <button type="button" data-sample-code="SR-SROS" class="tk-sample-code">SR-SROS</button>
+                <button type="button" data-sample-code="BN-CNLY" class="tk-sample-code">BN-CNLY</button>
+                <button type="button" data-sample-code="SP-CLND" class="tk-sample-code">SP-CLND</button>
+              </div>
+              <label class="inline-flex items-center gap-1.5 text-[11px] text-zinc-500 cursor-pointer">
+                <input type="checkbox" id="tkOfflineSimToggle" class="rounded border-zinc-300 text-brand-700" />
+                <span>Offline Queue</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="tkOfflineQueueBar" class="hidden rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 flex items-center justify-between text-xs">
+            <span class="text-amber-800 dark:text-amber-300 font-medium"><span id="tkQueueCount">0</span> queued offline</span>
+            <button id="tkSyncQueueBtn" type="button" class="px-2.5 py-1 rounded bg-amber-500 text-zinc-950 font-semibold">Sync Now</button>
+          </div>
+
+          <!-- Single Member / Viewing Input Controls (For Coordinator Use) -->
+          <div id="tkStep2Container" class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+            <div class="lg:col-span-3 space-y-1">
+              <label for="tkMemberSelect" class="block text-[11px] font-medium text-zinc-500">1. Select Member Name</label>
+              <select id="tkMemberSelect" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-medium text-zinc-950 dark:text-white"></select>
+            </div>
+
+            <div class="lg:col-span-3 space-y-1">
+              <label for="tkSessionSelect" class="block text-[11px] font-medium text-zinc-500">2. Session (PM / WS / TG)</label>
+              <select id="tkSessionSelect" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-medium text-zinc-950 dark:text-white"></select>
+            </div>
+
+            <div class="lg:col-span-2 space-y-1">
+              <label for="tkAttendanceModeSelect" class="block text-[11px] font-medium text-zinc-500">3. Attendance Type</label>
+              <select id="tkAttendanceModeSelect" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-medium text-zinc-950 dark:text-white">
+                <option value="live">Live Session</option>
+                <option value="viewing">Viewing (Missed Live / Not on Live Duty)</option>
+              </select>
+            </div>
+
+            <div id="tkSessionCodeWrapper" class="hidden lg:col-span-2 space-y-1">
+              <label for="tkSessionCodeInput" class="block text-[11px] font-medium text-zinc-500">Venue Code (TG-8821)</label>
+              <input id="tkSessionCodeInput" type="text" value="TG-8821" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 font-mono text-xs uppercase text-zinc-950 dark:text-white" />
+            </div>
+
+            <div class="lg:col-span-4 space-y-1">
+              <label class="block text-[11px] font-medium text-zinc-500">4. Tap Status &amp; Submit to Table</label>
+              <div class="flex items-center gap-2">
+                <div id="tkStatusButtonsGrid" class="flex items-center gap-1 flex-1"></div>
+                <button id="tkSubmitBtn" type="button" class="px-4 py-2 rounded-lg bg-brand-800 hover:bg-brand-700 text-white font-semibold text-xs whitespace-nowrap transition-colors">
+                  Submit Attendance Entry
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div id="tkSessionWindowBanner" class="text-[11px] text-zinc-500"></div>
+            <div id="tkReceiptBox" class="hidden rounded-md border px-2.5 py-1 text-xs"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+
+          <!-- Left 5 Cols: Coordinator Batch TG Duty Roster Input -->
+          <div class="xl:col-span-5 border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-100 dark:border-obsidian-800 pb-3">
+              <div>
+                <h2 class="text-sm font-semibold text-zinc-950 dark:text-white">Batch TG Duty Roster</h2>
+                <p class="text-xs text-zinc-500">Mark multiple members for TG at once and submit to the table.</p>
+              </div>
+              <span class="font-mono text-[11px] text-zinc-400">PIN: <strong class="text-zinc-800 dark:text-zinc-200">1234</strong></span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 items-end">
+              <div>
+                <label for="coordLocaleInput" class="block text-[11px] font-medium text-zinc-500 mb-1">Locale Code</label>
+                <input id="coordLocaleInput" type="text" value="SR-DILA" class="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 font-mono text-xs uppercase text-zinc-950 dark:text-white" />
+              </div>
+              <div>
+                <label for="coordPinInput" class="block text-[11px] font-medium text-zinc-500 mb-1">PIN</label>
+                <input id="coordPinInput" type="password" value="1234" maxlength="6" class="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 font-mono text-xs text-zinc-950 dark:text-white" />
+              </div>
+              <button id="coordUnlockBtn" type="button" class="py-1.5 px-3 rounded-lg bg-zinc-900 dark:bg-obsidian-800 hover:bg-zinc-800 text-white font-semibold text-xs transition-colors">
+                Verify PIN & Load Roster
+              </button>
+            </div>
+
+            <div id="coordAuthBanner" class="rounded-lg p-2.5 text-xs border"></div>
+
+            <div id="coordBatchSection" class="space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <label for="coordSessionSelect" class="text-[11px] font-medium text-zinc-500">Target Session Column:</label>
+                  <select id="coordSessionSelect" class="px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-semibold text-zinc-950 dark:text-white"></select>
+                </div>
+                <div class="hidden">
+                  <select id="coordBatchModeSelect"><option value="live">Live Session</option></select>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button type="button" id="coordMarkAllSBtn" class="px-2 py-1 rounded border border-zinc-200 dark:border-obsidian-700 text-[11px] font-medium hover:bg-zinc-100 dark:hover:bg-obsidian-800">Set All Unmarked to S</button>
+                  <button type="button" id="coordClearAllBtn" class="px-2 py-1 rounded border border-zinc-200 dark:border-obsidian-700 text-[11px] font-medium hover:bg-zinc-100 dark:hover:bg-obsidian-800">Clear Selection</button>
+                </div>
+              </div>
+
+              <div id="coordMembersList" class="divide-y divide-zinc-200 dark:divide-obsidian-800 rounded-lg border border-zinc-200 dark:border-obsidian-800 overflow-hidden max-h-[380px] overflow-y-auto"></div>
+
+              <div class="flex items-center justify-between pt-1">
+                <span id="coordSelectedSummary" class="text-[11px] text-zinc-500">Submits directly to the table on the right.</span>
+                <button id="coordSubmitBatchBtn" type="button" class="px-4 py-2 rounded-lg bg-brand-800 hover:bg-brand-700 text-white font-semibold text-xs transition-colors">
+                  Submit Coordinator Batch
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right 7 Cols: Live Locale Regular Duty Table -->
+          <div class="xl:col-span-7 border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden shadow-xs">
+            <div class="px-4 py-3 bg-zinc-50 dark:bg-obsidian-900 border-b border-zinc-200 dark:border-obsidian-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div>
+                <span class="font-semibold text-zinc-900 dark:text-white" id="coordTableLocaleHeading">Locale Regular Duty Sheet</span>
+                <span class="text-[11px] text-zinc-400 block">Submit a TG batch from the left or click any cell directly in the table below to edit.</span>
+              </div>
+              <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-brand-500/10 text-brand-700 dark:text-brand-300 font-medium">Editable Table · Auto-Syncs</span>
+            </div>
+            <div class="overflow-x-auto" id="coordSharedSheetContainer"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- VIEW 4: OFFICER WORKSPACE (SIDEBAR-DRIVEN)                      -->
+      <!-- =============================================================== -->
+      <section id="view-officer" class="space-y-4">
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- SUBVIEW C (DEFAULT): REGULAR DUTY SHEET (GOOGLE SHEETS SETUP) -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="officer-subview-grid" class="space-y-3">
+
+          <!-- Compact Sheet Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- City Filter -->
+              <select id="gridCityFilterSelect" aria-label="Filter by City" class="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-brand-600">
+                <option value="ALL">All Cities (18)</option>
+                <option value="Santa Rosa">Santa Rosa (7)</option>
+                <option value="Biñan">Biñan (7)</option>
+                <option value="San Pedro">San Pedro (4)</option>
+              </select>
+
+              <!-- Locale Selector -->
+              <select id="gridLocaleSelect" aria-label="Select Locale" class="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs font-semibold text-zinc-950 dark:text-white focus:outline-none focus:border-brand-600"></select>
+
+              <!-- Search Member Input -->
+              <div class="relative">
+                <input id="gridSearchMember" type="text" placeholder="Filter member..." class="pl-3 pr-3 py-1.5 w-44 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs text-zinc-950 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:border-brand-600" />
+              </div>
+              <button type="button" id="sheetQuickAddMemberBtn" class="px-2.5 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold transition-colors">
+                + Add Member
+              </button>
+
+              <!-- Segmented Sheet Mode (Regular Duty vs Practice) -->
+              <div class="inline-flex rounded-lg bg-zinc-100 dark:bg-obsidian-900 p-0.5 border border-zinc-200 dark:border-obsidian-800">
+                <button type="button" id="sheetModeRegularBtn" class="px-2.5 py-1 rounded-md text-xs font-medium transition-colors">Regular Duty (PM/WS/TG)</button>
+                <button type="button" id="sheetModePracticeBtn" class="px-2.5 py-1 rounded-md text-xs font-medium transition-colors">Practice Sheet</button>
+              </div>
+            </div>
+
+            <!-- Right: Locale Rollup Counters -->
+            <div id="sheetLocaleSummaryStrip" class="flex flex-wrap items-center gap-1.5 text-xs"></div>
+          </div>
+
+          <!-- Main Spreadsheet Container -->
+          <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden shadow-xs">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs sheet-table">
+                <thead id="weeklyGridThead" class="bg-zinc-50 dark:bg-obsidian-900"></thead>
+                <tbody id="weeklyGridTbody" class="bg-white dark:bg-obsidian-950"></tbody>
+                <tfoot id="weeklyGridTfoot" class="bg-zinc-50 dark:bg-obsidian-900 font-mono text-[11px]"></tfoot>
+              </table>
+            </div>
+
+            <!-- Bottom Sheet Locale Tabs (Workbook Bar) -->
+            <div class="bg-zinc-50 dark:bg-obsidian-900 border-t border-zinc-200 dark:border-obsidian-800 px-2 py-1 flex items-center gap-1 overflow-x-auto">
+              <div id="sheetBottomTabsContainer" class="flex items-center gap-0.5"></div>
+            </div>
+          </div>
+
+          <!-- Compact Audit Log Footer -->
+          <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-zinc-900 dark:text-zinc-200">Recent Cell Edits</span>
+              <span id="auditLogCountBadge" class="text-[11px] font-mono text-zinc-400"></span>
+            </div>
+            <div id="auditLogList" class="space-y-1.5 text-xs"></div>
+          </div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- SUBVIEW A: DISTRICT ROLLUP DASHBOARD                          -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="officer-subview-dashboard" class="hidden space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <select id="dashMonthSelect" aria-label="Select Month" class="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs font-medium text-zinc-900 dark:text-white">
+                <option value="2026-10">October 2026</option>
+                <option value="2026-09">September 2026</option>
+              </select>
+              <select id="dashCityFilter" aria-label="Filter City" class="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs font-medium text-zinc-900 dark:text-white">
+                <option value="ALL">All 3 Cities (18 Locales)</option>
+                <option value="Santa Rosa">Santa Rosa (7)</option>
+                <option value="Biñan">Biñan (7)</option>
+                <option value="San Pedro">San Pedro (4)</option>
+              </select>
+            </div>
+            <label class="inline-flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer">
+              <input type="checkbox" id="dashShowNoDutyAttendedToggle" checked class="rounded border-zinc-300 text-brand-700" />
+              <span>Include "Attended, No Duty (D)" column</span>
+            </label>
+          </div>
+
+          <div id="dashKpiGrid" class="grid grid-cols-2 lg:grid-cols-5 gap-3"></div>
+          <div id="dashCityCardsContainer" class="space-y-5"></div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- SUBVIEW B: VIEWING INBOX & LIVE VENUE BOARD                   -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="officer-subview-inbox" class="hidden space-y-5">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div class="lg:col-span-6 border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-5 space-y-4">
+              <div class="flex items-center justify-between border-b border-zinc-100 dark:border-obsidian-800 pb-3">
+                <div>
+                  <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">Pending Viewing Confirmations</h3>
+                  <p class="text-xs text-zinc-500">TG submissions after Saturday 3:30 PM awaiting officer review.</p>
+                </div>
+                <button id="confirmAllDistrictPendingBtn" type="button" class="px-3 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold transition-colors">
+                  Confirm All Pending
+                </button>
+              </div>
+              <div id="pendingInboxList" class="space-y-3"></div>
+            </div>
+
+            <div class="lg:col-span-6 border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-5 space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 dark:border-obsidian-800 pb-3">
+                <div>
+                  <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">Live Venue Board (Saturday TG — Per Locale)</h3>
+                  <p class="text-xs text-zinc-500">Session Code: <span class="font-mono font-semibold text-brand-700 dark:text-brand-400">TG-8821</span></p>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <select id="liveBoardCityFilter" aria-label="Filter Live Board by City" class="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-950 text-xs font-medium">
+                    <option value="ALL">All Cities (3)</option>
+                    <option value="Santa Rosa">Santa Rosa (7)</option>
+                    <option value="Biñan">Biñan (7)</option>
+                    <option value="San Pedro">San Pedro (4)</option>
+                  </select>
+                  <select id="liveBoardLocaleFilter" aria-label="Filter Live Board by Locale" class="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-950 text-xs font-semibold text-zinc-900 dark:text-white">
+                    <option value="ALL">All Locales (Per-Locale View)</option>
+                  </select>
+                </div>
+              </div>
+              <div id="liveBoardStatsRow" class="grid grid-cols-4 gap-2"></div>
+              <div id="liveBoardFeed" class="space-y-3 max-h-[460px] overflow-y-auto pr-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- SUBVIEW D: SESSIONS & DIRECTORY ADMIN                         -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="officer-subview-admin" class="hidden space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 flex flex-col justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">Weekly Session Templates</h3>
+                <p class="text-xs text-zinc-500 mt-0.5">Generate PM, WS, and TG sessions for the week in one click.</p>
+              </div>
+              <button id="btnGenerateWeekSessions" type="button" class="w-full py-2 px-3 rounded-lg bg-brand-800 hover:bg-brand-700 text-white font-semibold text-xs transition-colors">
+                + Generate PM, WS & TG Sessions
+              </button>
+            </div>
+
+            <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 flex flex-col justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">SPBB 3-Day Event</h3>
+                <p class="text-xs text-zinc-500 mt-0.5">Configure Day 1, Day 2, and Day 3 schedules for quarterly SPBB.</p>
+              </div>
+              <button id="btnOpenSpbbModal" type="button" class="w-full py-2 px-3 rounded-lg border border-zinc-300 dark:border-obsidian-700 hover:border-brand-600 text-xs font-semibold transition-colors">
+                + Create SPBB 3-Day Event
+              </button>
+            </div>
+
+            <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 flex flex-col justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">Custom / Practice Session</h3>
+                <p class="text-xs text-zinc-500 mt-0.5">Add a single practice or special worship session.</p>
+              </div>
+              <button id="btnOpenAddSessionModal" type="button" class="w-full py-2 px-3 rounded-lg border border-zinc-300 dark:border-obsidian-700 hover:border-brand-600 text-xs font-semibold transition-colors">
+                + Add Custom Session
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div class="lg:col-span-5 border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Active Sessions</h3>
+                <span id="adminSessionsCount" class="text-xs font-mono text-zinc-400"></span>
+              </div>
+              <div id="adminSessionsList" class="space-y-2 max-h-96 overflow-y-auto pr-1"></div>
+            </div>
+
+            <div class="lg:col-span-7 border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">18 Locales & Coordinator Access</h3>
+                <button id="btnOpenAddMemberModal" type="button" class="px-3 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold">
+                  + Add / Transfer Member
+                </button>
+              </div>
+              <div id="adminLocalesTableWrapper" class="overflow-x-auto max-h-96 overflow-y-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="sticky top-0 bg-zinc-50 dark:bg-obsidian-950 border-b border-zinc-200 dark:border-obsidian-800 text-zinc-400">
+                    <tr>
+                      <th class="py-2 px-2 font-medium">Locale</th>
+                      <th class="py-2 px-2 font-medium">Code</th>
+                      <th class="py-2 px-2 font-medium">Coordinator</th>
+                      <th class="py-2 px-2 font-medium">PIN</th>
+                      <th class="py-2 px-2 text-right font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminLocalesTbody" class="divide-y divide-zinc-100 dark:divide-obsidian-800"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- SUBVIEW E: REPORTS & EXPORT                                   -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="officer-subview-reports" class="hidden space-y-4">
+          <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">Monthly Reports & Workbook Export</h3>
+              <p class="text-xs text-zinc-500">Generate formatted Excel workbooks or freeze official monthly snapshots.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5">
+              <label class="inline-flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer">
+                <input type="checkbox" id="reportSaveOfficialCheckbox" checked class="rounded border-zinc-300 text-brand-700" />
+                <span>Save as official snapshot</span>
+              </label>
+              <button id="btnExportCsv" type="button" class="px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-obsidian-800">
+                Download .CSV (Plain)
+              </button>
+              <button id="btnExportXlsx" type="button" class="px-3.5 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold">
+                Export Formatted .XLSX Workbook
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="inline-flex flex-wrap gap-1 p-1 rounded-lg bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800">
+              <button type="button" data-report-sheet="overall" class="report-sheet-btn px-3 py-1 rounded-md text-xs font-medium">1. All Members (Overall Status)</button>
+              <button type="button" data-report-sheet="district" class="report-sheet-btn px-3 py-1 rounded-md text-xs font-medium">2. District Summary</button>
+              <button type="button" data-report-sheet="locale_grid" class="report-sheet-btn px-3 py-1 rounded-md text-xs font-medium">3. Locale Grids</button>
+              <button type="button" data-report-sheet="no_duty" class="report-sheet-btn px-3 py-1 rounded-md text-xs font-medium">4. No-Duty List</button>
+              <button type="button" data-report-sheet="snapshots" class="report-sheet-btn px-3 py-1 rounded-md text-xs font-medium">5. Official Snapshots (<span id="snapshotCountBadge">1</span>)</button>
+            </div>
+          </div>
+
+          <div id="reportSheetPreviewContainer" class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden"></div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODALS                                                              -->
+  <!-- =================================================================== -->
+  <!-- Modal 1: Cell Edit -->
+  <div id="modalCellEdit" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-xl border border-zinc-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-900 p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-zinc-100 dark:border-obsidian-800 pb-3">
+        <h3 id="modalCellTitle" class="text-sm font-semibold text-zinc-950 dark:text-white">Edit Attendance Status</h3>
+        <button id="closeCellEditModalBtn" type="button" class="text-zinc-400 hover:text-zinc-700 dark:hover:text-white text-xs font-bold px-1.5 py-0.5">✕</button>
+      </div>
+      <div id="modalCellMeta" class="text-xs text-zinc-500 space-y-0.5"></div>
+      <div class="space-y-1.5">
+        <label for="modalNewStatusSelect" class="block text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</label>
+        <select id="modalNewStatusSelect" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-semibold text-zinc-950 dark:text-white">
+          <option value="S">S — Attended and did duty (Sumayaw)</option>
+          <option value="P">P — Attended and did duty (Program)</option>
+          <option value="D">D — Attended, no duty (Dumalo)</option>
+          <option value="A">A — Did not attend (Absent)</option>
+          <option value="N">N — No attendance recorded</option>
+        </select>
+      </div>
+      <div class="space-y-1.5">
+        <label for="modalEditReasonInput" class="block text-xs font-medium text-zinc-600 dark:text-zinc-400">Reason for Edit</label>
+        <input id="modalEditReasonInput" type="text" placeholder="e.g. Verified viewing proof with coordinator" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs text-zinc-950 dark:text-white" />
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button id="cancelCellEditBtn" type="button" class="px-3.5 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 text-xs font-medium">Cancel</button>
+        <button id="saveCellEditBtn" type="button" class="px-4 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold">Save & Log Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Monthly Remarks -->
+  <div id="modalRemarks" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-xl border border-zinc-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-900 p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-zinc-100 dark:border-obsidian-800 pb-3">
+        <h3 id="modalRemarksLocaleTitle" class="text-sm font-semibold text-zinc-950 dark:text-white">Locale Monthly Remarks</h3>
+        <button id="closeRemarksModalBtn" type="button" class="text-zinc-400 hover:text-zinc-700 dark:hover:text-white text-xs font-bold px-1.5 py-0.5">✕</button>
+      </div>
+      <div id="modalRemarksReadOnlyStats" class="grid grid-cols-4 gap-2 text-center"></div>
+      <div class="space-y-1.5">
+        <label for="modalRemarksTextarea" class="block text-xs font-medium text-zinc-600 dark:text-zinc-400">Remarks</label>
+        <textarea id="modalRemarksTextarea" rows="3" placeholder="Enter monthly remarks..." class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs text-zinc-950 dark:text-white"></textarea>
+      </div>
+      <div class="flex items-center justify-end gap-2">
+        <button id="cancelRemarksBtn" type="button" class="px-3.5 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 text-xs font-medium">Cancel</button>
+        <button id="saveRemarksBtn" type="button" class="px-4 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold">Save Monthly Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Admin Actions -->
+  <div id="modalAdminAction" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-lg rounded-xl border border-zinc-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-900 p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-zinc-100 dark:border-obsidian-800 pb-3">
+        <h3 id="modalAdminActionTitle" class="text-sm font-semibold text-zinc-950 dark:text-white">Admin Action</h3>
+        <button id="closeAdminActionModalBtn" type="button" class="text-zinc-400 hover:text-zinc-700 dark:hover:text-white text-xs font-bold px-1.5 py-0.5">✕</button>
+      </div>
+      <div id="modalAdminActionBody" class="space-y-4 text-xs"></div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Supabase Backend Connection & Migration -->
+  <div id="modalSupabaseConfig" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-xl rounded-xl border border-zinc-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-900 p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-zinc-100 dark:border-obsidian-800 pb-3">
+        <div>
+          <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">Full-Stack Backend &amp; Supabase Database Connection</h3>
+          <p class="text-[11px] text-zinc-500">Connect this frontend to your live Supabase PostgreSQL instance after running <code class="font-mono">001_lnatk_supabase_migration.sql</code>.</p>
+        </div>
+        <button id="closeSupabaseModalBtn" type="button" class="text-zinc-400 hover:text-zinc-700 dark:hover:text-white text-xs font-bold px-1.5 py-0.5">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label for="sbUrlInput" class="block font-medium text-zinc-600 dark:text-zinc-300 mb-1">Supabase Project URL (<code class="font-mono">VITE_SUPABASE_URL</code>)</label>
+          <input id="sbUrlInput" type="url" placeholder="https://your-project-id.supabase.co" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 font-mono text-xs text-zinc-950 dark:text-white" />
+        </div>
+        <div>
+          <label for="sbAnonKeyInput" class="block font-medium text-zinc-600 dark:text-zinc-300 mb-1">Supabase Anon Public Key (<code class="font-mono">VITE_SUPABASE_ANON_KEY</code>)</label>
+          <input id="sbAnonKeyInput" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 font-mono text-xs text-zinc-950 dark:text-white" />
+        </div>
+        <div class="p-3 rounded-lg bg-zinc-50 dark:bg-obsidian-950 border border-zinc-200 dark:border-obsidian-800 space-y-1 text-[11px] text-zinc-500">
+          <div class="font-semibold text-zinc-800 dark:text-zinc-200">Active Backend RPC Endpoints (<code class="font-mono">001_lnatk_supabase_migration.sql</code>):</div>
+          <ul class="list-disc pl-4 space-y-0.5 font-mono text-[10px]">
+            <li>POST /rest/v1/rpc/get_active_locales (City &amp; Locale dropdowns)</li>
+            <li>POST /rest/v1/rpc/get_locale_duty_sheet (Regular Duty Sheet loader)</li>
+            <li>POST /rest/v1/rpc/submit_table_cell_status (Inline cell edit D / S / A / P / N)</li>
+            <li>POST /rest/v1/rpc/submit_for_locale (Coordinator PIN + Batch TG Roster)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2">
+        <button id="disconnectSupabaseBtn" type="button" class="px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-white">
+          Use Local Demo DB
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="saveSupabaseConfigBtn" type="button" class="px-4 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold">
+            Save &amp; Connect Live Backend
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-1.5 max-w-sm"></div>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    const LOCALES_SEED = [
+      // Santa Rosa (7)
+      { id: 1, city: 'Santa Rosa', name: 'Dila', code: 'SR-DILA', coordinator: 'Marco Villanueva', contact: '0917-550-1101', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 2, city: 'Santa Rosa', name: 'Macabling', code: 'SR-MCBL', coordinator: 'Clarisse Aquino', contact: '0917-550-1102', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 3, city: 'Santa Rosa', name: 'Pulong Santa Cruz', code: 'SR-PSCZ', coordinator: 'Jomar Bautista', contact: '0917-550-1103', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 4, city: 'Santa Rosa', name: 'Santa Rosa', code: 'SR-SROS', coordinator: 'Hannah Mendoza', contact: '0917-550-1104', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 5, city: 'Santa Rosa', name: 'San Lorenzo', code: 'SR-SLOR', coordinator: 'Christian Ocampo', contact: '0917-550-1105', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 6, city: 'Santa Rosa', name: 'Sinalhan', code: 'SR-SNLH', coordinator: 'Patricia Castro', contact: '0917-550-1106', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 7, city: 'Santa Rosa', name: 'SV4', code: 'SR-SV04', coordinator: 'Ryan Tolentino', contact: '0917-550-1107', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      // Biñan (7)
+      { id: 8, city: 'Biñan', name: 'Canlalay', code: 'BN-CNLY', coordinator: 'Angela Soriano', contact: '0918-620-2201', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 9, city: 'Biñan', name: 'Dela Paz', code: 'BN-DLPZ', coordinator: 'Kenneth Navarro', contact: '0918-620-2202', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 10, city: 'Biñan', name: 'Loma', code: 'BN-LOMA', coordinator: 'Bea Salazar', contact: '0918-620-2203', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 11, city: 'Biñan', name: 'Malaban', code: 'BN-MLBN', coordinator: 'Carlo Alcantara', contact: '0918-620-2204', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 12, city: 'Biñan', name: 'Mamplasan', code: 'BN-MMPL', coordinator: 'Denise Pineda', contact: '0918-620-2205', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 13, city: 'Biñan', name: 'Platero', code: 'BN-PLTR', coordinator: 'Gabriel Mercado', contact: '0918-620-2206', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 14, city: 'Biñan', name: 'South City', code: 'BN-SCTY', coordinator: 'Katrina Flores', contact: '0918-620-2207', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      // San Pedro (4)
+      { id: 15, city: 'San Pedro', name: 'Calendola', code: 'SP-CLND', coordinator: 'Joshua Pascual', contact: '0919-740-3301', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 16, city: 'San Pedro', name: 'Langgam', code: 'SP-LNGM', coordinator: 'Micaela Ramos', contact: '0919-740-3302', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 17, city: 'San Pedro', name: 'Rosario', code: 'SP-RSRO', coordinator: 'Nathan Vergara', contact: '0919-740-3303', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true },
+      { id: 18, city: 'San Pedro', name: 'San Pedro', code: 'SP-SPDR', coordinator: 'Joyce Evangelista', contact: '0919-740-3304', pin: '1234', failedAttempts: 0, lockedUntil: null, active: true }
+    ];
+
+    const SESSIONS_SEED = [
+      // Week 1
+      { id: 'w1-pm', type: 'PM', label: 'Week 1 PM', shortLabel: 'PM', date: '2026-09-30', weekNum: 1, code: null, confirmViewing: false, allowed: ['D','A','S','N'], statusWindow: 'closed' },
+      { id: 'w1-ws', type: 'WS', label: 'Week 1 WS', shortLabel: 'WS', date: '2026-10-03', weekNum: 1, code: null, confirmViewing: false, allowed: ['D','A','S','N'], statusWindow: 'closed' },
+      { id: 'w1-tg', type: 'TG', label: 'Week 1 TG', shortLabel: 'TG', date: '2026-10-03', weekNum: 1, code: 'TG-1003', confirmViewing: true, allowed: ['D','A','S','P','N'], statusWindow: 'closed' },
+      // Week 2
+      { id: 'w2-pm', type: 'PM', label: 'Week 2 PM', shortLabel: 'PM', date: '2026-10-07', weekNum: 2, code: null, confirmViewing: false, allowed: ['D','A','S','N'], statusWindow: 'closed' },
+      { id: 'w2-ws', type: 'WS', label: 'Week 2 WS', shortLabel: 'WS', date: '2026-10-10', weekNum: 2, code: null, confirmViewing: false, allowed: ['D','A','S','N'], statusWindow: 'closed' },
+      { id: 'w2-tg', type: 'TG', label: 'Week 2 TG', shortLabel: 'TG', date: '2026-10-10', weekNum: 2, code: 'TG-1010', confirmViewing: true, allowed: ['D','A','S','P','N'], statusWindow: 'closed' },
+      // Week 3
+      { id: 'w3-pm', type: 'PM', label: 'Week 3 PM', shortLabel: 'PM', date: '2026-10-14', weekNum: 3, code: null, confirmViewing: false, allowed: ['D','A','S','N'], statusWindow: 'closed' },
+      { id: 'w3-ws', type: 'WS', label: 'Week 3 WS', shortLabel: 'WS', date: '2026-10-17', weekNum: 3, code: null, confirmViewing: false, allowed: ['D','A','S','N'], statusWindow: 'closed' },
+      { id: 'w3-tg', type: 'TG', label: 'Week 3 TG', shortLabel: 'TG', date: '2026-10-17', weekNum: 3, code: 'TG-1017', confirmViewing: true, allowed: ['D','A','S','P','N'], statusWindow: 'closed' },
+      // Week 4
+      { id: 'w4-pm', type: 'PM', label: 'Week 4 PM', shortLabel: 'PM', date: '2026-10-21', weekNum: 4, code: null, confirmViewing: false, allowed: ['D','A','S','N'], statusWindow: 'open' },
+      { id: 'w4-ws', type: 'WS', label: 'Week 4 WS', shortLabel: 'WS', date: '2026-10-24', weekNum: 4, code: null, confirmViewing: false, allowed: ['D','A','S','N'], statusWindow: 'open' },
+      { id: 'w4-tg', type: 'TG', label: 'Week 4 TG', shortLabel: 'TG', date: '2026-10-24', weekNum: 4, code: 'TG-8821', confirmViewing: true, allowed: ['D','A','S','P','N'], statusWindow: 'live' }
+    ];
+
+    const PRACTICE_SESSIONS_SEED = [
+      { id: 'prac-w1', label: 'Week 1 Practice', date: '2026-10-02', weekNum: 1 },
+      { id: 'prac-w2', label: 'Week 2 Practice', date: '2026-10-09', weekNum: 2 },
+      { id: 'prac-w3', label: 'Week 3 Practice', date: '2026-10-16', weekNum: 3 },
+      { id: 'prac-w4', label: 'Week 4 Practice', date: '2026-10-23', weekNum: 4 }
+    ];
+    const PRACTICE_LOGS = {};
+
+    const FIRST_NAMES = ['Alyssa', 'Daniel', 'Mateo', 'Sofia', 'Gabriel', 'Camille', 'Lucas', 'Bianca', 'Ethan', 'Nadine', 'Rafael', 'Katrina', 'Miguel', 'Cheska', 'Paolo', 'Trisha', 'Andrei', 'Mika', 'Jericho', 'Zaira'];
+    const LAST_NAMES = ['Santos', 'Reyes', 'Cruz', 'Bautista', 'Ocampo', 'Mendoza', 'Delos Reyes', 'Villanueva', 'Ramos', 'Garcia', 'Flores', 'Gonzales', 'Salazar', 'Navarro', 'Mercado', 'Pascual', 'Vergara', 'Castillo'];
+
+    const MEMBERS_SEED = [];
+    const ATTENDANCE_LOGS = {};
+
+    let memberSeq = 1;
+    LOCALES_SEED.forEach((loc, idx) => {
+      const count = loc.id === 1 ? 8 : (loc.id <= 6 ? 5 : 4);
+      for (let i = 0; i < count; i++) {
+        const mId = `m-${memberSeq++}`;
+        const fullName = `${LAST_NAMES[(idx + i) % LAST_NAMES.length]}, ${FIRST_NAMES[(idx * 3 + i) % FIRST_NAMES.length]}`;
+        MEMBERS_SEED.push({
+          id: mId,
+          localeId: loc.id,
+          fullName,
+          joinedAt: '2026-01-15',
+          leftAt: null
+        });
+
+        const pattern = (i % 4 === 0 || i % 4 === 1) ? 'HIGH' : (i % 4 === 2 ? 'MID' : 'NONE');
+        SESSIONS_SEED.forEach((sess) => {
+          let st = 'S';
+          if (pattern === 'HIGH') {
+            st = (sess.type === 'TG' && i === 0 && sess.weekNum === 4) ? 'P' : (sess.type === 'PM' && i === 1 ? 'D' : 'S');
+          } else if (pattern === 'MID') {
+            st = (sess.weekNum <= 2 && sess.type === 'TG') ? 'S' : 'D';
+          } else {
+            st = (sess.weekNum % 2 === 0) ? 'D' : 'A';
+          }
+          ATTENDANCE_LOGS[`${mId}_${sess.id}`] = {
+            memberId: mId,
+            sessionId: sess.id,
+            status: st,
+            source: i === 2 ? 'coordinator' : 'self',
+            attendedVia: sess.type === 'TG' ? 'live' : null,
+            confirmed: true,
+            updatedAt: '2026-10-24 14:35'
+          };
+        });
+        const pracStatuses = ['District Practice', 'Kids TK Practice', 'Self-Study', 'Absent'];
+        PRACTICE_SESSIONS_SEED.forEach((ps, pIdx) => {
+          PRACTICE_LOGS[`${mId}_${ps.id}`] = pracStatuses[(i + pIdx) % pracStatuses.length];
+        });
+      }
+    });
+
+    // Pending viewing entries
+    [MEMBERS_SEED[1], MEMBERS_SEED[4], MEMBERS_SEED[22]].forEach((m) => {
+      if (m) {
+        ATTENDANCE_LOGS[`${m.id}_w4-tg`] = {
+          memberId: m.id,
+          sessionId: 'w4-tg',
+          status: 'S',
+          source: 'coordinator',
+          attendedVia: 'viewing',
+          confirmed: false,
+          updatedAt: '2026-10-24 17:10'
+        };
+      }
+    });
+
+    const MONTHLY_REPORTS = {
+      1: { remarks: 'All active officers and regular TK briefed on viewing schedule.', submittedAt: '2026-10-20', editedAfterReport: false },
+      4: { remarks: '2 new members transferred in from Biñan; 1 member on medical leave.', submittedAt: '2026-10-19', editedAfterReport: true },
+      8: { remarks: 'Consistent TG live attendance; coordinator assisted 3 members without phones.', submittedAt: '2026-10-21', editedAfterReport: false },
+      15: { remarks: 'Followed up with 1-2 weeks duty members ahead of SPBB preparation.', submittedAt: '2026-10-22', editedAfterReport: false }
+    };
+
+    const EDIT_HISTORY = [
+      { id: 'ed-1', memberName: 'Santos, Alyssa', localeName: 'Dila', sessionLabel: 'Week 3 TG', oldStatus: 'A', newStatus: 'S', by: 'Daniel Reyes', at: 'Oct 19, 8:14 PM', reason: 'Confirmed Tuesday viewing submission with coordinator' },
+      { id: 'ed-2', memberName: 'Mendoza, Lucas', localeName: 'Santa Rosa', sessionLabel: 'Week 2 TG', oldStatus: 'D', newStatus: 'P', by: 'Daniel Reyes', at: 'Oct 22, 9:40 AM', reason: 'Performed Program duty during TG session' }
+    ];
+
+    const OFFICIAL_SNAPSHOTS = [
+      { id: 'snap-sep-2026', monthYear: '2026-09', type: 'All Members + District Summary', createdBy: 'Daniel Reyes', createdAt: 'Sep 30, 9:00 PM', totalMembers: 82, duty34: 48, duty12: 22, noDuty: 12 }
+    ];
+
+    const state = {
+      currentRoleView: 'officer',
+      officerTab: 'grid',
+      sheetMode: 'regular',
+      gridCityFilter: 'ALL',
+      simWindow: 'tg_live',
+      tkLocaleId: 1,
+      tkSelectedStatus: 'S',
+      tkOfflineQueue: [],
+      coordLocaleId: 1,
+      coordUnlocked: true,
+      coordDraftStatuses: {},
+      dashCityFilter: 'ALL',
+      dashShowAttendedNoDuty: true,
+      gridLocaleId: 1,
+      gridSearch: '',
+      activeEditCell: null,
+      activeRemarksLocaleId: null,
+      reportSheet: 'overall'
+    };
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = 'px-3.5 py-2.5 rounded-lg border border-zinc-200 dark:border-obsidian-700 bg-zinc-900 dark:bg-obsidian-800 text-white text-xs font-medium shadow-lg flex items-center gap-2';
+      el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-brand-400"></span><span>${message}</span>`;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+
+    function getMemberWeekBestStatus(memberId, weekNum) {
+      const weekSessions = SESSIONS_SEED.filter(s => s.weekNum === weekNum);
+      let best = '-';
+      const rank = { 'P': 5, 'S': 4, 'D': 3, 'A': 2, 'N': 1, '-': 0 };
+      weekSessions.forEach(s => {
+        const log = ATTENDANCE_LOGS[`${memberId}_${s.id}`];
+        if (log && log.confirmed && log.status && rank[log.status] > rank[best]) {
+          best = log.status;
+        }
+      });
+      return best;
+    }
+
+    function computeMemberMonthlyRollup(memberId) {
+      let weeksDuty = 0;
+      let attendedNoDutyWeeks = 0;
+      const weekMarkers = {};
+      for (let w = 1; w <= 4; w++) {
+        const marker = getMemberWeekBestStatus(memberId, w);
+        weekMarkers[w] = marker;
+        if (marker === 'S' || marker === 'P') weeksDuty++;
+        else if (marker === 'D') attendedNoDutyWeeks++;
+      }
+      let bucket = 'No Duty';
+      if (weeksDuty >= 3) bucket = '3-4 Weeks Duty';
+      else if (weeksDuty >= 1) bucket = '1-2 Weeks Duty';
+      return { weeksDuty, attendedNoDutyWeeks, bucket, weekMarkers };
+    }
+
+    function computeLocaleRollup(localeId) {
+      const activeMembers = MEMBERS_SEED.filter(m => m.localeId === localeId && !m.leftAt);
+      let duty34 = 0, duty12 = 0, noDuty = 0, attendedOnly = 0;
+      activeMembers.forEach(m => {
+        const r = computeMemberMonthlyRollup(m.id);
+        if (r.bucket === '3-4 Weeks Duty') duty34++;
+        else if (r.bucket === '1-2 Weeks Duty') duty12++;
+        else {
+          noDuty++;
+          if (r.attendedNoDutyWeeks > 0) attendedOnly++;
+        }
+      });
+      return { total: activeMembers.length, duty34, duty12, noDuty, attendedOnly };
+    }
+
+    function getPendingEntries() {
+      const list = [];
+      Object.values(ATTENDANCE_LOGS).forEach(log => {
+        if (!log.confirmed) {
+          const member = MEMBERS_SEED.find(m => m.id === log.memberId);
+          const locale = LOCALES_SEED.find(l => l.id === (member ? member.localeId : 1));
+          const session = SESSIONS_SEED.find(s => s.id === log.sessionId);
+          if (member && locale && session) list.push({ log, member, locale, session });
+        }
+      });
+      return list;
+    }
+
+    function updatePendingBadges() {
+      const count = getPendingEntries().length;
+      const b1 = document.getElementById('headerPendingBadge');
+      const b2 = document.getElementById('officerTabInboxBadge');
+      if (b1) b1.textContent = String(count);
+      if (b2) b2.textContent = String(count);
+    }
+
+    function updateTopBreadcrumbs() {
+      const cityEl = document.getElementById('topBreadcrumbCity');
+      const titleEl = document.getElementById('topBreadcrumbTitle');
+      const codeEl = document.getElementById('topBreadcrumbCode');
+      const loc = LOCALES_SEED.find(l => l.id === state.gridLocaleId) || LOCALES_SEED[0];
+
+      if (state.currentRoleView === 'tk') {
+        const tkLoc = LOCALES_SEED.find(l => l.id === state.tkLocaleId) || LOCALES_SEED[0];
+        cityEl.textContent = 'Member Portal';
+        titleEl.textContent = `${tkLoc.name} Self Check-In`;
+        codeEl.textContent = tkLoc.code;
+      } else if (state.currentRoleView === 'coordinator') {
+        const cLoc = LOCALES_SEED.find(l => l.id === state.coordLocaleId) || LOCALES_SEED[0];
+        cityEl.textContent = 'Coordinator Mode';
+        titleEl.textContent = `${cLoc.name} Batch Check-In`;
+        codeEl.textContent = cLoc.code;
+      } else if (state.currentRoleView === 'landing') {
+        cityEl.textContent = 'LNATK';
+        titleEl.textContent = 'Platform Overview';
+        codeEl.textContent = '18 Locales';
+      } else {
+        const tabNames = {
+          grid: `${loc.name} — ${state.sheetMode === 'practice' ? 'Practice Sheet' : 'Regular Duty Sheet'}`,
+          dashboard: 'District Rollup Summary',
+          inbox: 'Viewing Inbox & Live Venue Board',
+          admin: 'Sessions & Directory Management',
+          reports: 'Reports & Official Snapshots'
+        };
+        cityEl.textContent = state.officerTab === 'grid' ? loc.city : 'District Officer';
+        titleEl.textContent = tabNames[state.officerTab] || 'Workspace';
+        codeEl.textContent = state.officerTab === 'grid' ? loc.code : 'Oct 2026';
+      }
+    }
+
+    function renderSidebarLocalesTree() {
+      const tree = document.getElementById('sidebarLocalesTree');
+      if (!tree) return;
+      const cities = ['Santa Rosa', 'Biñan', 'San Pedro'];
+      tree.innerHTML = cities.map(city => {
+        const locs = LOCALES_SEED.filter(l => l.city === city);
+        return `
+          <div class="space-y-0.5">
+            <div class="px-2 py-0.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 flex items-center justify-between">
+              <span>${city}</span>
+              <span class="font-mono text-[9px]">${locs.length}</span>
+            </div>
+            ${locs.map(l => {
+              const active = state.currentRoleView === 'officer' && state.officerTab === 'grid' && state.gridLocaleId === l.id;
+              return `
+                <button type="button" data-sidebar-locale="${l.id}" class="sidebar-locale-btn w-full px-2.5 py-1.5 rounded-md text-xs flex items-center justify-between transition-colors ${
+                  active
+                    ? 'bg-brand-800/10 dark:bg-brand-500/15 text-brand-800 dark:text-brand-300 font-semibold border-l-2 border-brand-700 dark:border-brand-400'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-obsidian-850 hover:text-zinc-950 dark:hover:text-zinc-200'
+                }">
+                  <span class="truncate">${l.name}</span>
+                  <span class="font-mono text-[10px] opacity-60">${l.code.split('-')[1]}</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.sidebar-locale-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pickedId = Number(btn.getAttribute('data-sidebar-locale'));
+          const pickedLoc = LOCALES_SEED.find(l => l.id === pickedId);
+          state.gridLocaleId = pickedId;
+          state.tkLocaleId = pickedId;
+          state.coordLocaleId = pickedId;
+          if (pickedLoc) {
+            const tkInp = document.getElementById('tkLocaleCodeInput');
+            const cdInp = document.getElementById('coordLocaleInput');
+            if (tkInp) tkInp.value = pickedLoc.code;
+            if (cdInp) cdInp.value = pickedLoc.code;
+          }
+          closeMobileSidebar();
+          if (state.currentRoleView === 'tk') {
+            updateTopBreadcrumbs();
+            renderSidebarLocalesTree();
+            renderTkView();
+          } else if (state.currentRoleView === 'coordinator') {
+            updateTopBreadcrumbs();
+            renderSidebarLocalesTree();
+            renderCoordinatorView();
+          } else {
+            state.currentRoleView = 'officer';
+            state.officerTab = 'grid';
+            setRoleView('officer');
+            setOfficerTab('grid');
+          }
+        });
+      });
+    }
+
+    function setRoleView(role) {
+      state.currentRoleView = role;
+      const sidebar = document.getElementById('appSidebar');
+      if (sidebar) {
+        // Hide sidebar on the full-screen Log-In view so the centered box matches the sketch
+        sidebar.classList.toggle('lg:hidden', role !== 'officer');
+        const mobBtn = document.getElementById('openMobileSidebarBtn');
+        if (mobBtn) mobBtn.classList.toggle('hidden', role !== 'officer');
+        const switchBtn = document.getElementById('topSwitchRoleBtn');
+        if (switchBtn) {
+          switchBtn.classList.toggle('hidden', role === 'landing');
+          switchBtn.textContent = 'Log Out / Switch Account';
+        }
+      }
+      ['landing', 'tk', 'coordinator', 'officer'].forEach(r => {
+        const sec = document.getElementById(`view-${r}`);
+        if (sec) sec.classList.toggle('hidden', r !== role);
+      });
+      document.querySelectorAll('.role-pill').forEach(btn => {
+        const active = btn.getAttribute('data-role-nav') === role;
+        btn.className = active
+          ? 'role-pill py-1.5 px-2 rounded-md text-xs font-semibold bg-white dark:bg-obsidian-800 text-zinc-950 dark:text-white shadow-2xs transition-all text-center'
+          : 'role-pill py-1.5 px-2 rounded-md text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-all text-center';
+      });
+      updateTopBreadcrumbs();
+      renderSidebarLocalesTree();
+      if (role === 'tk') renderTkView();
+      if (role === 'coordinator') renderCoordinatorView();
+      if (role === 'officer') renderOfficerView();
+    }
+
+    function setOfficerTab(tab) {
+      state.officerTab = tab;
+      ['dashboard', 'inbox', 'grid', 'admin', 'reports'].forEach(t => {
+        const el = document.getElementById(`officer-subview-${t}`);
+        if (el) el.classList.toggle('hidden', t !== tab);
+      });
+      document.querySelectorAll('.officer-tab-btn').forEach(btn => {
+        const active = btn.getAttribute('data-officer-tab') === tab;
+        btn.className = active
+          ? 'officer-tab-btn w-full px-2.5 py-2 rounded-lg text-xs font-semibold bg-brand-800 text-white flex items-center justify-between transition-colors'
+          : 'officer-tab-btn w-full px-2.5 py-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-obsidian-850 hover:text-zinc-950 dark:hover:text-zinc-200 flex items-center justify-between transition-colors';
+      });
+      updateTopBreadcrumbs();
+      renderSidebarLocalesTree();
+      renderOfficerView();
+    }
+
+    const STATUS_FULL_LABELS = {
+      'D': 'D - Dumalo',
+      'S': 'S - Sumayaw',
+      'A': 'A - Absent',
+      'P': 'P - Program',
+      'N': 'N - No Attendance'
+    };
+
+    function buildReadOnlyLocaleSheetHtml(localeId, highlightSessionId = 'w4-tg', searchFilter = '', sourceRole = 'self') {
+      const loc = LOCALES_SEED.find(l => l.id === localeId) || LOCALES_SEED[0];
+      const members = MEMBERS_SEED.filter(m =>
+        m.localeId === loc.id &&
+        !m.leftAt &&
+        m.fullName.toLowerCase().includes((searchFilter || '').toLowerCase())
+      );
+      const weeks = [1, 2, 3, 4];
+      const weekRanges = {
+        1: 'WEEK 1 (SEP 30 – OCT 3)',
+        2: 'WEEK 2 (OCT 7 – OCT 10)',
+        3: 'WEEK 3 (OCT 14 – OCT 17)',
+        4: 'WEEK 4 (OCT 21 – OCT 24)'
+      };
+      const cellTone = {
+        'S': 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/10',
+        'P': 'text-brand-700 dark:text-brand-300 bg-brand-500/15',
+        'D': 'text-amber-700 dark:text-amber-300 bg-amber-500/10',
+        'A': 'text-rose-600 dark:text-rose-400 bg-rose-500/10',
+        'N': 'text-zinc-400 dark:text-zinc-500'
+      };
+
+      const theadHtml = `
+        <tr class="bg-zinc-100/80 dark:bg-obsidian-900 text-zinc-600 dark:text-zinc-400">
+          <th rowspan="2" class="sticky-col-1 bg-zinc-100 dark:bg-obsidian-900 py-2 px-2 text-center font-mono text-[10px] w-9">#</th>
+          <th rowspan="2" class="sticky-col-2 bg-zinc-100 dark:bg-obsidian-900 py-2 px-3.5 font-semibold text-xs text-zinc-900 dark:text-zinc-100 min-w-[165px]">Member Name</th>
+          ${weeks.map(w => {
+            const wSessions = SESSIONS_SEED.filter(s => s.weekNum === w && ['PM','WS','TG'].includes(s.type) && !s.id.startsWith('w5-'));
+            return `<th colspan="${wSessions.length + 1}" class="py-1.5 px-2 text-center font-mono text-[10px] font-semibold tracking-wider text-zinc-700 dark:text-zinc-300 bg-zinc-100/60 dark:bg-obsidian-900">${weekRanges[w]}</th>`;
+          }).join('')}
+          <th colspan="2" class="py-1.5 px-2.5 text-center font-mono text-[10px] font-semibold tracking-wider text-brand-800 dark:text-brand-300 bg-brand-50/50 dark:bg-brand-950/30">ROLLUP</th>
+        </tr>
+        <tr class="bg-zinc-50 dark:bg-obsidian-900/80 text-zinc-500 dark:text-zinc-400">
+          ${weeks.map(w => {
+            const wSessions = SESSIONS_SEED.filter(s => s.weekNum === w && ['PM','WS','TG'].includes(s.type) && !s.id.startsWith('w5-'));
+            return wSessions.map(s => `
+              <th class="py-1.5 px-1 text-center font-mono w-14 ${s.id === highlightSessionId ? 'bg-brand-500/10 ring-1 ring-inset ring-brand-500/40' : ''}">
+                <div class="font-semibold text-[11px] ${s.type === 'TG' ? 'text-brand-700 dark:text-brand-400' : 'text-zinc-700 dark:text-zinc-300'}">${s.shortLabel || s.type}</div>
+                <div class="text-[9px] text-zinc-400 font-normal">${s.date.slice(5)}</div>
+              </th>
+            `).join('') + `
+              <th class="py-1.5 px-1.5 text-center font-mono w-14 whitespace-nowrap bg-zinc-100/70 dark:bg-obsidian-900">
+                <div class="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300">Week ${w}</div>
+              </th>
+            `;
+          }).join('')}
+          <th class="py-1.5 px-2 text-center font-mono text-[10px] font-semibold">Weeks</th>
+          <th class="py-1.5 px-3 text-left font-mono text-[10px] font-semibold">Status</th>
+        </tr>
+      `;
+
+      const tbodyHtml = members.map((m, idx) => {
+        const rollup = computeMemberMonthlyRollup(m.id);
+        const weekCols = weeks.map(w => {
+          const wSessions = SESSIONS_SEED.filter(s => s.weekNum === w && ['PM','WS','TG'].includes(s.type) && !s.id.startsWith('w5-'));
+          const wkBest = rollup.weekMarkers[w];
+          const wkDot = (wkBest === 'S' || wkBest === 'P')
+            ? 'text-emerald-700 dark:text-emerald-300 font-bold'
+            : wkBest === 'D'
+            ? 'text-amber-600 dark:text-amber-400 font-semibold'
+            : 'text-zinc-400 dark:text-zinc-600';
+
+          return wSessions.map(s => {
+            const log = ATTENDANCE_LOGS[`${m.id}_${s.id}`] || { status: 'N', source: 'none', attendedVia: null, confirmed: true };
+            const cls = cellTone[log.status] || cellTone['N'];
+            const baseOpts = s.allowed.map(st => `<option value="${st}" ${log.status === st ? 'selected' : ''} class="bg-white dark:bg-obsidian-900 text-zinc-900 dark:text-white">${STATUS_FULL_LABELS[st] || st}</option>`).join('');
+            return `
+              <td class="p-0.5 text-center align-middle ${s.id === highlightSessionId ? 'bg-brand-500/5' : ''}">
+                <div class="relative inline-flex items-center justify-center w-11 py-1 rounded font-mono font-semibold text-xs ${cls}">
+                  <span class="pointer-events-none">${log.status}</span>
+                  <select aria-label="${m.fullName} ${s.label}" data-shared-member="${m.id}" data-shared-session="${s.id}" data-shared-role="${sourceRole}" class="shared-sheet-select absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    ${baseOpts}
+                  </select>
+                </div>
+              </td>
+            `;
+          }).join('') + `
+            <td class="p-1 text-center bg-zinc-50/70 dark:bg-obsidian-900/50 font-mono text-xs ${wkDot}">${wkBest}</td>
+          `;
+        }).join('');
+
+        const statusStyle = rollup.bucket === '3-4 Weeks Duty'
+          ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
+          : rollup.bucket === '1-2 Weeks Duty'
+          ? 'text-brand-700 dark:text-brand-300 bg-brand-500/10 border-brand-500/20'
+          : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20';
+
+        return `
+          <tr class="hover:bg-zinc-50/80 dark:hover:bg-obsidian-900/40">
+            <td class="sticky-col-1 bg-white dark:bg-obsidian-950 py-1.5 px-2 text-center font-mono text-[11px] text-zinc-400 tabular-nums">${idx + 1}</td>
+            <td class="sticky-col-2 bg-white dark:bg-obsidian-950 py-1.5 px-3.5 font-medium text-zinc-900 dark:text-zinc-100 whitespace-nowrap group">
+              <div class="flex items-center justify-between gap-1.5">
+                <span>${m.fullName}</span>
+                ${sourceRole === 'coordinator' ? `<button type="button" title="Edit member name" data-rename-member="${m.id}" class="rename-member-btn opacity-0 group-hover:opacity-100 text-[10px] text-zinc-400 hover:text-brand-600 px-1 py-0.5 rounded transition-opacity">✎</button>` : ''}
+              </div>
+            </td>
+            ${weekCols}
+            <td class="py-1.5 px-2 text-center font-mono font-semibold text-xs tabular-nums">${rollup.weeksDuty}</td>
+            <td class="py-1.5 px-3 whitespace-nowrap">
+              <span class="inline-block px-2 py-0.5 rounded border text-[11px] font-medium ${statusStyle}">${rollup.bucket}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <table class="w-full text-left text-xs sheet-table">
+          <thead>${theadHtml}</thead>
+          <tbody>${tbodyHtml}</tbody>
+        </table>
+      `;
+    }
+
+    function wireSharedSheetSelects(containerEl) {
+      if (!containerEl) return;
+      containerEl.querySelectorAll('.shared-sheet-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const mId = sel.getAttribute('data-shared-member');
+          const sId = sel.getAttribute('data-shared-session');
+          const roleSource = sel.getAttribute('data-shared-role') || 'self';
+          const newSt = e.target.value;
+
+          const prev = ATTENDANCE_LOGS[`${mId}_${sId}`] || { status: 'N' };
+          const member = MEMBERS_SEED.find(m => m.id === mId);
+          const loc = LOCALES_SEED.find(l => l.id === (member ? member.localeId : 1));
+          const sess = SESSIONS_SEED.find(s => s.id === sId);
+
+          ATTENDANCE_LOGS[`${mId}_${sId}`] = {
+            memberId: mId,
+            sessionId: sId,
+            status: newSt,
+            source: roleSource,
+            attendedVia: 'live',
+            confirmed: true,
+            updatedAt: 'Just now'
+          };
+
+          EDIT_HISTORY.unshift({
+            id: `ed-${Date.now()}`,
+            memberName: member.fullName,
+            localeName: loc.name,
+            sessionLabel: sess.label,
+            oldStatus: prev.status,
+            newStatus: newSt,
+            by: roleSource === 'coordinator' ? `${loc.coordinator} (Coordinator)` : `${member.fullName} (Regular TK)`,
+            at: 'Just now',
+            reason: 'Direct table edit'
+          });
+
+          updatePendingBadges();
+          if (state.currentRoleView === 'tk') renderTkView();
+          if (state.currentRoleView === 'coordinator') renderCoordinatorView();
+          showToast(`${member.fullName} (${sess.label}) → ${newSt}`);
+        });
+      });
+      containerEl.querySelectorAll('.rename-member-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openRenameMemberModal(btn.getAttribute('data-rename-member'));
+        });
+      });
+    }
+
+    function renderTkView() {
+      const loc = LOCALES_SEED.find(l => l.id === state.tkLocaleId) || LOCALES_SEED[0];
+      document.getElementById('tkResolvedLocaleBadge').textContent = `${loc.city} • ${loc.name}`;
+      const heading = document.getElementById('tkTableLocaleHeading');
+      if (heading) heading.textContent = `${loc.city} — Locale of ${loc.name} Regular Duty Sheet`;
+
+      // Sync City & Locale dropdowns in Regular TK view
+      const citySel = document.getElementById('tkViewCitySelect');
+      const locSel = document.getElementById('tkViewLocaleSelect');
+      if (citySel && locSel) {
+        citySel.value = loc.city;
+        const cityLocales = LOCALES_SEED.filter(l => l.city === loc.city);
+        locSel.innerHTML = cityLocales.map(l => `<option value="${l.id}" ${l.id === loc.id ? 'selected' : ''}>${l.name}</option>`).join('');
+      }
+
+      // Render Locale Status Summary Pills (3-4 Weeks, 1-2 Weeks, No Duty, Total)
+      const rollup = computeLocaleRollup(loc.id);
+      const pillsEl = document.getElementById('tkLocaleStatusSummaryPills');
+      if (pillsEl) {
+        pillsEl.innerHTML = `
+          <div class="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800 font-mono text-[11px] tabular-nums">
+            <span class="text-zinc-400">3-4 Weeks Duty:</span> <strong class="text-emerald-600 dark:text-emerald-400">${rollup.duty34}</strong>
+          </div>
+          <div class="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800 font-mono text-[11px] tabular-nums">
+            <span class="text-zinc-400">1-2 Weeks Duty:</span> <strong class="text-brand-700 dark:text-brand-400">${rollup.duty12}</strong>
+          </div>
+          <div class="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800 font-mono text-[11px] tabular-nums">
+            <span class="text-zinc-400">No Duty:</span> <strong class="text-rose-600 dark:text-rose-400">${rollup.noDuty}</strong>
+          </div>
+          <div class="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800 font-mono text-[11px] tabular-nums">
+            <span class="text-zinc-400">Total Members:</span> <strong class="text-zinc-900 dark:text-white">${rollup.total}</strong>
+          </div>
+        `;
+      }
+
+      const searchVal = (document.getElementById('tkViewSearchMember') || {}).value || '';
+      const sheetBox = document.getElementById('tkSharedSheetContainer');
+      if (sheetBox) {
+        sheetBox.innerHTML = buildReadOnlyLocaleSheetHtml(loc.id, 'w4-tg', searchVal, 'self');
+        wireSharedSheetSelects(sheetBox);
+      }
+    }
+
+    function updateTkSessionContext() {
+      const sessId = document.getElementById('tkSessionSelect').value;
+      const sess = SESSIONS_SEED.find(s => s.id === sessId) || SESSIONS_SEED[SESSIONS_SEED.length - 1];
+      const banner = document.getElementById('tkSessionWindowBanner');
+      const codeWrap = document.getElementById('tkSessionCodeWrapper');
+
+      const isTgViewing = (sess.type === 'TG' && state.simWindow === 'tg_viewing');
+      const isTgLive = (sess.type === 'TG' && state.simWindow !== 'tg_viewing');
+
+      if (isTgLive) {
+        banner.innerHTML = `Live TG window open (2:30–3:30 PM). Enter venue code <strong>${sess.code || 'TG-8821'}</strong> for immediate confirmation.`;
+        codeWrap.classList.remove('hidden');
+      } else if (isTgViewing) {
+        banner.innerHTML = `Viewing window open until Tuesday. Entry is saved as pending until confirmed by an officer.`;
+        codeWrap.classList.add('hidden');
+      } else {
+        banner.innerHTML = `Continuous entry window open. Entry is auto-confirmed.`;
+        codeWrap.classList.add('hidden');
+      }
+
+      const statusLabels = {
+        'S': 'Sumayaw — Attended & Did Duty',
+        'P': 'Program — TG / SPBB Duty',
+        'D': 'Dumalo — Attended, No Duty',
+        'A': 'Absent — Did Not Attend',
+        'N': 'No Record'
+      };
+
+      const grid = document.getElementById('tkStatusButtonsGrid');
+      if (!sess.allowed.includes(state.tkSelectedStatus)) state.tkSelectedStatus = sess.allowed[0];
+
+      grid.innerHTML = sess.allowed.map(st => {
+        const selected = state.tkSelectedStatus === st;
+        return `
+          <button type="button" title="${statusLabels[st] || st}" data-tk-status="${st}" class="tk-status-btn flex-1 py-2 px-2.5 rounded-lg border font-mono text-xs font-bold transition-all flex items-center justify-center ${
+            selected
+              ? 'border-brand-700 bg-brand-800 text-white shadow-2xs'
+              : 'border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-zinc-700 dark:text-zinc-300 hover:border-brand-600'
+          }">
+            ${st}
+          </button>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.tk-status-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.tkSelectedStatus = btn.getAttribute('data-tk-status');
+          updateTkSessionContext();
+        });
+      });
+    }
+
+    function renderCoordinatorView() {
+      const loc = LOCALES_SEED.find(l => l.id === state.coordLocaleId) || LOCALES_SEED[0];
+      state.tkLocaleId = loc.id;
+      const memberSelect = document.getElementById('tkMemberSelect');
+      const coordMembers = MEMBERS_SEED.filter(m => m.localeId === loc.id && !m.leftAt);
+      if (memberSelect) {
+        memberSelect.innerHTML = coordMembers.map(m => `<option value="${m.id}">${m.fullName}</option>`).join('');
+      }
+      const topSessSelect = document.getElementById('tkSessionSelect');
+      const openSessList = SESSIONS_SEED.filter(s => s.statusWindow !== 'closed');
+      if (topSessSelect && !topSessSelect.innerHTML) {
+        topSessSelect.innerHTML = openSessList.map(s => `<option value="${s.id}" ${s.id === 'w4-tg' ? 'selected' : ''}>${s.label} — ${s.date}</option>`).join('');
+      }
+      updateTkSessionContext();
+      const banner = document.getElementById('coordAuthBanner');
+      const batchSec = document.getElementById('coordBatchSection');
+
+      if (loc.failedAttempts >= 5) {
+        banner.className = 'rounded-lg p-3 text-xs border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300';
+        banner.innerHTML = `Locale locked for 15 minutes after 5 failed PIN attempts. Contact a district officer to reset.`;
+        batchSec.classList.add('hidden');
+        return;
+      }
+
+      if (!state.coordUnlocked) {
+        banner.className = 'rounded-lg p-3 text-xs border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300';
+        banner.innerHTML = `Enter locale code and coordinator PIN. Failed attempts: ${loc.failedAttempts}/5.`;
+        batchSec.classList.add('hidden');
+        return;
+      }
+
+      banner.className = 'rounded-lg p-3 text-xs border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-950 flex flex-wrap items-center justify-between gap-2';
+      banner.innerHTML = `
+        <span><strong>${loc.city} — ${loc.name}</strong> (<code class="font-mono">${loc.code}</code>)</span>
+        <span class="text-zinc-500">Coordinator: ${loc.coordinator}</span>
+      `;
+      batchSec.classList.remove('hidden');
+
+      const sessSelect = document.getElementById('coordSessionSelect');
+      const openSessions = SESSIONS_SEED.filter(s => s.statusWindow !== 'closed');
+      if (!sessSelect.innerHTML) {
+        sessSelect.innerHTML = openSessions.map(s => `<option value="${s.id}" ${s.id === 'w4-tg' ? 'selected' : ''}>${s.label} (${s.date})</option>`).join('');
+      }
+      const activeSessId = sessSelect.value || 'w4-tg';
+      const members = MEMBERS_SEED.filter(m => m.localeId === loc.id && !m.leftAt);
+
+      document.getElementById('coordMembersList').innerHTML = members.map(m => {
+        const existing = ATTENDANCE_LOGS[`${m.id}_${activeSessId}`];
+        const draft = state.coordDraftStatuses[m.id] || (existing ? existing.status : '');
+        return `
+          <div class="px-3.5 py-2.5 bg-white dark:bg-obsidian-900 flex items-center justify-between gap-3">
+            <div>
+              <p class="text-xs font-medium text-zinc-950 dark:text-white">${m.fullName}</p>
+              <p class="text-[11px] text-zinc-400">${existing ? `Recorded: ${existing.status} (${existing.source})` : 'Unmarked'}</p>
+            </div>
+            <div class="flex items-center gap-1">
+              ${['S','P','D','A'].map(st => `
+                <button type="button" data-coord-member="${m.id}" data-coord-st="${st}" class="coord-st-btn w-7 h-7 rounded font-mono text-xs font-semibold border transition-colors ${
+                  draft === st
+                    ? 'bg-brand-800 text-white border-brand-700'
+                    : 'bg-zinc-50 dark:bg-obsidian-950 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-obsidian-800 hover:border-brand-600'
+                }">${st}</button>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.coord-st-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.coordDraftStatuses[btn.getAttribute('data-coord-member')] = btn.getAttribute('data-coord-st');
+          renderCoordinatorView();
+        });
+      });
+
+      const heading = document.getElementById('coordTableLocaleHeading');
+      if (heading) heading.textContent = `${loc.city} — Locale of ${loc.name} Regular Duty Sheet`;
+      const sheetBox = document.getElementById('coordSharedSheetContainer');
+      if (sheetBox) {
+        sheetBox.innerHTML = buildReadOnlyLocaleSheetHtml(loc.id, activeSessId, '', 'coordinator');
+        wireSharedSheetSelects(sheetBox);
+      }
+    }
+
+    function renderOfficerView() {
+      updatePendingBadges();
+      updateTopBreadcrumbs();
+      if (state.officerTab === 'dashboard') renderOfficerDashboard();
+      if (state.officerTab === 'inbox') renderOfficerInboxAndLiveBoard();
+      if (state.officerTab === 'grid') renderOfficerWeeklyGrid();
+      if (state.officerTab === 'admin') renderOfficerAdmin();
+      if (state.officerTab === 'reports') renderOfficerReports();
+    }
+
+    function renderOfficerWeeklyGrid() {
+      const filteredLocales = LOCALES_SEED.filter(l => state.gridCityFilter === 'ALL' || l.city === state.gridCityFilter);
+      if (!filteredLocales.some(l => l.id === state.gridLocaleId) && filteredLocales.length > 0) {
+        state.gridLocaleId = filteredLocales[0].id;
+      }
+
+      const locSelect = document.getElementById('gridLocaleSelect');
+      locSelect.innerHTML = filteredLocales.map(l => `<option value="${l.id}">${l.city} — ${l.name} (${l.code})</option>`).join('');
+      locSelect.value = String(state.gridLocaleId);
+
+      const currentLocale = LOCALES_SEED.find(l => l.id === state.gridLocaleId) || LOCALES_SEED[0];
+      const locRollup = computeLocaleRollup(currentLocale.id);
+      const locReport = MONTHLY_REPORTS[currentLocale.id];
+
+      const regBtn = document.getElementById('sheetModeRegularBtn');
+      const pracBtn = document.getElementById('sheetModePracticeBtn');
+      if (regBtn && pracBtn) {
+        regBtn.className = state.sheetMode === 'regular'
+          ? 'px-2.5 py-1 rounded-md text-xs font-semibold bg-white dark:bg-obsidian-800 text-zinc-950 dark:text-white shadow-2xs'
+          : 'px-2.5 py-1 rounded-md text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200';
+        pracBtn.className = state.sheetMode === 'practice'
+          ? 'px-2.5 py-1 rounded-md text-xs font-semibold bg-white dark:bg-obsidian-800 text-zinc-950 dark:text-white shadow-2xs'
+          : 'px-2.5 py-1 rounded-md text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200';
+      }
+
+      const summaryStrip = document.getElementById('sheetLocaleSummaryStrip');
+      if (summaryStrip) {
+        summaryStrip.innerHTML = `
+          <div class="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800 font-mono text-[11px] tabular-nums">
+            <span class="text-zinc-400">3-4 Weeks:</span> <strong class="text-emerald-600 dark:text-emerald-400">${locRollup.duty34}</strong>
+          </div>
+          <div class="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800 font-mono text-[11px] tabular-nums">
+            <span class="text-zinc-400">1-2 Weeks:</span> <strong class="text-brand-700 dark:text-brand-400">${locRollup.duty12}</strong>
+          </div>
+          <div class="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800 font-mono text-[11px] tabular-nums">
+            <span class="text-zinc-400">No Duty:</span> <strong class="text-rose-600 dark:text-rose-400">${locRollup.noDuty}</strong>
+          </div>
+          <div class="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800 font-mono text-[11px] tabular-nums">
+            <span class="text-zinc-400">Total:</span> <strong class="text-zinc-900 dark:text-white">${locRollup.total}</strong>
+          </div>
+          <button type="button" id="sheetQuickRemarksBtn" class="px-2.5 py-1 rounded-md border border-zinc-300 dark:border-obsidian-700 hover:border-brand-600 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+            ${locReport ? 'Remarks ✓' : '+ Remarks'}
+          </button>
+        `;
+        document.getElementById('sheetQuickRemarksBtn').addEventListener('click', () => openRemarksModal(currentLocale.id));
+      }
+
+      const members = MEMBERS_SEED.filter(m =>
+        m.localeId === state.gridLocaleId &&
+        !m.leftAt &&
+        m.fullName.toLowerCase().includes(state.gridSearch.toLowerCase())
+      );
+
+      const thead = document.getElementById('weeklyGridThead');
+      const tbody = document.getElementById('weeklyGridTbody');
+      const tfoot = document.getElementById('weeklyGridTfoot');
+
+      if (state.sheetMode === 'practice') {
+        thead.innerHTML = `
+          <tr>
+            <th class="py-2 px-2.5 w-9 text-center font-mono text-[11px] text-zinc-400">#</th>
+            <th class="py-2 px-3.5 font-semibold text-zinc-900 dark:text-zinc-200">Member Name</th>
+            ${PRACTICE_SESSIONS_SEED.map(ps => `
+              <th class="py-2 px-3 text-center font-mono text-[11px]">
+                <div class="font-semibold text-zinc-800 dark:text-zinc-200">${ps.label}</div>
+                <div class="text-[10px] text-zinc-400 font-normal">${ps.date}</div>
+              </th>
+            `).join('')}
+            <th class="py-2 px-3 text-center font-medium text-zinc-400">Note</th>
+          </tr>
+        `;
+        const pracOptions = ['District Practice', 'Kids TK Practice', 'Self-Study', 'Absent', 'No Attendance'];
+        tbody.innerHTML = members.map((m, idx) => `
+          <tr class="hover:bg-zinc-50/80 dark:hover:bg-obsidian-900/60">
+            <td class="py-1.5 px-2.5 text-center font-mono text-[11px] text-zinc-400 tabular-nums">${idx + 1}</td>
+            <td class="py-1.5 px-3.5 font-medium text-zinc-900 dark:text-zinc-100 whitespace-nowrap">${m.fullName}</td>
+            ${PRACTICE_SESSIONS_SEED.map(ps => {
+              const cur = PRACTICE_LOGS[`${m.id}_${ps.id}`] || 'No Attendance';
+              return `
+                <td class="p-1 text-center">
+                  <select data-prac-member="${m.id}" data-prac-sess="${ps.id}" class="prac-cell-select w-full px-2 py-1 rounded border border-zinc-200 dark:border-obsidian-800 bg-transparent text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-brand-600">
+                    ${pracOptions.map(opt => `<option value="${opt}" ${cur === opt ? 'selected' : ''} class="bg-white dark:bg-obsidian-900">${opt}</option>`).join('')}
+                  </select>
+                </td>
+              `;
+            }).join('')}
+            <td class="py-1.5 px-3 text-center text-[11px] text-zinc-400 font-mono">Non-duty</td>
+          </tr>
+        `).join('');
+        tfoot.innerHTML = '';
+
+        document.querySelectorAll('.prac-cell-select').forEach(sel => {
+          sel.addEventListener('change', (e) => {
+            PRACTICE_LOGS[`${sel.getAttribute('data-prac-member')}_${sel.getAttribute('data-prac-sess')}`] = e.target.value;
+            showToast(`Practice updated: ${e.target.value}`);
+          });
+        });
+      } else {
+        const weeks = [1, 2, 3, 4];
+        const weekRanges = {
+          1: 'WEEK 1 (SEP 30 – OCT 3)',
+          2: 'WEEK 2 (OCT 7 – OCT 10)',
+          3: 'WEEK 3 (OCT 14 – OCT 17)',
+          4: 'WEEK 4 (OCT 21 – OCT 24)'
+        };
+        const extraSessions = SESSIONS_SEED.filter(s => !['PM','WS','TG'].includes(s.type) || s.id.startsWith('w5-'));
+
+        thead.innerHTML = `
+          <tr class="bg-zinc-100/80 dark:bg-obsidian-900 text-zinc-600 dark:text-zinc-400">
+            <th rowspan="2" class="sticky-col-1 bg-zinc-100 dark:bg-obsidian-900 py-2 px-2 text-center font-mono text-[10px] w-9">#</th>
+            <th rowspan="2" class="sticky-col-2 bg-zinc-100 dark:bg-obsidian-900 py-2 px-3.5 font-semibold text-xs text-zinc-900 dark:text-zinc-100 min-w-[175px]">
+              Member Name
+            </th>
+            ${weeks.map(w => {
+              const wSessions = SESSIONS_SEED.filter(s => s.weekNum === w && ['PM','WS','TG'].includes(s.type) && !s.id.startsWith('w5-'));
+              return `<th colspan="${wSessions.length + 1}" class="py-1.5 px-2 text-center font-mono text-[10px] font-semibold tracking-wider text-zinc-700 dark:text-zinc-300 bg-zinc-100/60 dark:bg-obsidian-900">${weekRanges[w]}</th>`;
+            }).join('')}
+            ${extraSessions.length > 0 ? `<th colspan="${extraSessions.length}" class="py-1.5 px-2 text-center font-mono text-[10px] font-semibold text-brand-700 dark:text-brand-300">SPBB / EXTRA</th>` : ''}
+            <th colspan="2" class="py-1.5 px-2.5 text-center font-mono text-[10px] font-semibold tracking-wider text-brand-800 dark:text-brand-300 bg-brand-50/50 dark:bg-brand-950/30">MONTHLY ROLLUP</th>
+          </tr>
+          <tr class="bg-zinc-50 dark:bg-obsidian-900/80 text-zinc-500 dark:text-zinc-400">
+            ${weeks.map(w => {
+              const wSessions = SESSIONS_SEED.filter(s => s.weekNum === w && ['PM','WS','TG'].includes(s.type) && !s.id.startsWith('w5-'));
+              return wSessions.map(s => `
+                <th class="py-1.5 px-1 text-center font-mono w-14">
+                  <div class="font-semibold text-[11px] ${s.type === 'TG' ? 'text-brand-700 dark:text-brand-400' : 'text-zinc-700 dark:text-zinc-300'}">${s.shortLabel || s.type}</div>
+                  <div class="text-[9px] text-zinc-400 font-normal">${s.date.slice(5)}</div>
+                </th>
+              `).join('') + `
+                <th class="py-1.5 px-1.5 text-center font-mono w-14 whitespace-nowrap bg-zinc-100/70 dark:bg-obsidian-900">
+                  <div class="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300">Week ${w}</div>
+                </th>
+              `;
+            }).join('')}
+            ${extraSessions.map(s => `
+              <th class="py-1.5 px-1 text-center font-mono w-14">
+                <div class="font-semibold text-[10px] text-brand-700 dark:text-brand-400">${s.label}</div>
+              </th>
+            `).join('')}
+            <th class="py-1.5 px-2 text-center font-mono text-[10px] font-semibold">Weeks</th>
+            <th class="py-1.5 px-3 text-left font-mono text-[10px] font-semibold">Status</th>
+          </tr>
+        `;
+
+        const cellTone = {
+          'S': 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/10',
+          'P': 'text-brand-700 dark:text-brand-300 bg-brand-500/15',
+          'D': 'text-amber-700 dark:text-amber-300 bg-amber-500/10',
+          'A': 'text-rose-600 dark:text-rose-400 bg-rose-500/10',
+          'N': 'text-zinc-400 dark:text-zinc-500'
+        };
+
+        const renderSessionCell = (m, s) => {
+          const log = ATTENDANCE_LOGS[`${m.id}_${s.id}`] || { status: 'N', source: 'none', confirmed: true };
+          const cls = cellTone[log.status] || cellTone['N'];
+          const unconfirmed = !log.confirmed ? 'underline decoration-amber-400 decoration-dotted' : '';
+          return `
+            <td class="p-0.5 text-center align-middle group relative">
+              <div class="flex items-center justify-center">
+                <div class="relative inline-flex items-center justify-center w-11 py-1 rounded font-mono font-semibold text-xs ${cls} ${unconfirmed}">
+                  <span class="pointer-events-none">${log.status}</span>
+                  <select aria-label="${m.fullName} ${s.label}" data-inline-member="${m.id}" data-inline-session="${s.id}" class="sheet-inline-select absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    ${s.allowed.map(st => `<option value="${st}" ${log.status === st ? 'selected' : ''} class="bg-white dark:bg-obsidian-900 text-zinc-900 dark:text-white">${STATUS_FULL_LABELS[st] || st}</option>`).join('')}
+                  </select>
+                </div>
+                <button type="button" title="Edit with reason" data-edit-member="${m.id}" data-edit-session="${s.id}" class="grid-cell-btn opacity-0 group-hover:opacity-100 text-[9px] text-zinc-400 hover:text-brand-600 px-0.5 transition-opacity">✎</button>
+              </div>
+            </td>
+          `;
+        };
+
+        tbody.innerHTML = members.map((m, idx) => {
+          const rollup = computeMemberMonthlyRollup(m.id);
+          const weekGroupsHtml = weeks.map(w => {
+            const wSessions = SESSIONS_SEED.filter(s => s.weekNum === w && ['PM','WS','TG'].includes(s.type) && !s.id.startsWith('w5-'));
+            const wkBest = rollup.weekMarkers[w];
+            const wkDot = (wkBest === 'S' || wkBest === 'P')
+              ? 'text-emerald-700 dark:text-emerald-300 font-bold'
+              : wkBest === 'D'
+              ? 'text-amber-600 dark:text-amber-400 font-semibold'
+              : 'text-zinc-400 dark:text-zinc-600';
+
+            return wSessions.map(s => renderSessionCell(m, s)).join('') + `
+              <td class="p-1 text-center bg-zinc-50/70 dark:bg-obsidian-900/50 font-mono text-xs ${wkDot}">
+                ${wkBest}
+              </td>
+            `;
+          }).join('');
+
+          const extraHtml = extraSessions.map(s => renderSessionCell(m, s)).join('');
+
+          const statusStyle = rollup.bucket === '3-4 Weeks Duty'
+            ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
+            : rollup.bucket === '1-2 Weeks Duty'
+            ? 'text-brand-700 dark:text-brand-300 bg-brand-500/10 border-brand-500/20'
+            : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20';
+
+          return `
+            <tr class="hover:bg-zinc-50/80 dark:hover:bg-obsidian-900/40 transition-colors">
+              <td class="sticky-col-1 bg-white dark:bg-obsidian-950 py-1.5 px-2 text-center font-mono text-[11px] text-zinc-400 tabular-nums">${idx + 1}</td>
+              <td class="sticky-col-2 bg-white dark:bg-obsidian-950 py-1.5 px-3.5 font-medium text-zinc-900 dark:text-zinc-100 whitespace-nowrap group">
+                <div class="flex items-center justify-between gap-1.5">
+                  <span>${m.fullName}</span>
+                  <button type="button" title="Edit or remove member name" data-rename-member="${m.id}" class="rename-member-btn opacity-0 group-hover:opacity-100 text-[10px] text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 px-1 py-0.5 rounded transition-opacity">✎ Edit</button>
+                </div>
+              </td>
+              ${weekGroupsHtml}
+              ${extraHtml}
+              <td class="py-1.5 px-2 text-center font-mono font-semibold text-xs text-zinc-900 dark:text-zinc-100 tabular-nums">${rollup.weeksDuty}</td>
+              <td class="py-1.5 px-3 whitespace-nowrap">
+                <span class="inline-block px-2 py-0.5 rounded border text-[11px] font-medium ${statusStyle}">${rollup.bucket}</span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        tfoot.innerHTML = `
+          <tr>
+            <td colspan="2" class="py-2 px-3.5 font-sans font-semibold text-zinc-500 dark:text-zinc-400">Duty Count (S / P)</td>
+            ${weeks.map(w => {
+              const wSessions = SESSIONS_SEED.filter(s => s.weekNum === w && ['PM','WS','TG'].includes(s.type) && !s.id.startsWith('w5-'));
+              const sessCounts = wSessions.map(s => {
+                const c = members.filter(m => {
+                  const lg = ATTENDANCE_LOGS[`${m.id}_${s.id}`];
+                  return lg && lg.confirmed && (lg.status === 'S' || lg.status === 'P');
+                }).length;
+                return `<td class="py-2 px-1 text-center text-zinc-600 dark:text-zinc-300 tabular-nums">${c}</td>`;
+              }).join('');
+              const wkDutyCount = members.filter(m => {
+                const mk = getMemberWeekBestStatus(m.id, w);
+                return mk === 'S' || mk === 'P';
+              }).length;
+              return sessCounts + `<td class="py-2 px-1 text-center font-bold text-brand-700 dark:text-brand-300 bg-zinc-100/80 dark:bg-obsidian-900 tabular-nums">${wkDutyCount}</td>`;
+            }).join('')}
+            ${extraSessions.map(() => `<td class="py-2 px-1 text-center">—</td>`).join('')}
+            <td colspan="2" class="py-2 px-3 text-left font-sans text-[11px] text-zinc-500">
+              3-4 Weeks: <strong class="text-zinc-900 dark:text-white">${locRollup.duty34}</strong> • 1-2 Weeks: <strong class="text-zinc-900 dark:text-white">${locRollup.duty12}</strong> • No Duty: <strong class="text-zinc-900 dark:text-white">${locRollup.noDuty}</strong>
+            </td>
+          </tr>
+        `;
+
+        document.querySelectorAll('.sheet-inline-select').forEach(sel => {
+          sel.addEventListener('change', (e) => {
+            const mId = sel.getAttribute('data-inline-member');
+            const sId = sel.getAttribute('data-inline-session');
+            const newSt = e.target.value;
+            const prev = ATTENDANCE_LOGS[`${mId}_${sId}`] || { status: 'N' };
+            const member = MEMBERS_SEED.find(m => m.id === mId);
+            const sess = SESSIONS_SEED.find(s => s.id === sId);
+
+            ATTENDANCE_LOGS[`${mId}_${sId}`] = {
+              memberId: mId,
+              sessionId: sId,
+              status: newSt,
+              source: 'officer',
+              attendedVia: 'live',
+              confirmed: true,
+              updatedAt: 'Just now'
+            };
+
+            EDIT_HISTORY.unshift({
+              id: `ed-${Date.now()}`,
+              memberName: member.fullName,
+              localeName: currentLocale.name,
+              sessionLabel: sess.label,
+              oldStatus: prev.status,
+              newStatus: newSt,
+              by: 'Daniel Reyes',
+              at: 'Just now',
+              reason: 'Inline sheet update'
+            });
+
+            if (MONTHLY_REPORTS[currentLocale.id]) {
+              MONTHLY_REPORTS[currentLocale.id].editedAfterReport = true;
+            }
+            renderOfficerWeeklyGrid();
+            showToast(`${member.fullName} (${sess.label}) → ${newSt}`);
+          });
+        });
+
+        document.querySelectorAll('.grid-cell-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            openCellEditModal(btn.getAttribute('data-edit-member'), btn.getAttribute('data-edit-session'));
+          });
+        });
+        document.querySelectorAll('.rename-member-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            openRenameMemberModal(btn.getAttribute('data-rename-member'));
+          });
+        });
+      }
+
+      const bottomTabs = document.getElementById('sheetBottomTabsContainer');
+      if (bottomTabs) {
+        bottomTabs.innerHTML = filteredLocales.map(l => {
+          const active = l.id === state.gridLocaleId;
+          return `
+            <button type="button" data-sheet-tab-locale="${l.id}" class="sheet-tab-locale-btn px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+              active
+                ? 'bg-brand-800 text-white font-semibold'
+                : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-obsidian-800 hover:text-zinc-900 dark:hover:text-white'
+            }">${l.name}</button>
+          `;
+        }).join('');
+
+        document.querySelectorAll('.sheet-tab-locale-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.gridLocaleId = Number(btn.getAttribute('data-sheet-tab-locale'));
+            updateTopBreadcrumbs();
+            renderSidebarLocalesTree();
+            renderOfficerWeeklyGrid();
+          });
+        });
+      }
+
+      document.getElementById('auditLogCountBadge').textContent = `${EDIT_HISTORY.length} entries`;
+      document.getElementById('auditLogList').innerHTML = EDIT_HISTORY.slice(0, 4).map(e => `
+        <div class="py-1.5 px-2.5 rounded-lg bg-zinc-50 dark:bg-obsidian-950 border border-zinc-100 dark:border-obsidian-800 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="font-medium text-zinc-900 dark:text-zinc-200">${e.memberName}</span>
+            <span class="text-zinc-400"> (${e.localeName} • ${e.sessionLabel}) </span>
+            <span class="font-mono text-rose-500">${e.oldStatus}</span>
+            <span class="text-zinc-400"> → </span>
+            <span class="font-mono text-emerald-500 font-semibold">${e.newStatus}</span>
+            <span class="text-zinc-500"> · ${e.reason}</span>
+          </div>
+          <span class="text-[11px] font-mono text-zinc-400">${e.at}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderOfficerDashboard() {
+      let totalMembers = 0, total34 = 0, total12 = 0, totalNoDuty = 0, totalAttendedOnly = 0;
+      LOCALES_SEED.forEach(loc => {
+        const r = computeLocaleRollup(loc.id);
+        totalMembers += r.total;
+        total34 += r.duty34;
+        total12 += r.duty12;
+        totalNoDuty += r.noDuty;
+        totalAttendedOnly += r.attendedOnly;
+      });
+      const pendingCount = getPendingEntries().length;
+
+      document.getElementById('dashKpiGrid').innerHTML = `
+        <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4">
+          <p class="text-xs text-zinc-500">Total Active Roster</p>
+          <p class="text-2xl font-bold text-zinc-950 dark:text-white mt-1 tabular-nums">${totalMembers}</p>
+        </div>
+        <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4">
+          <p class="text-xs text-zinc-500">3–4 Weeks Duty</p>
+          <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">${total34}</p>
+        </div>
+        <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4">
+          <p class="text-xs text-zinc-500">1–2 Weeks Duty</p>
+          <p class="text-2xl font-bold text-brand-700 dark:text-brand-400 mt-1 tabular-nums">${total12}</p>
+        </div>
+        <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4">
+          <p class="text-xs text-zinc-500">No Duty (0 Weeks)</p>
+          <p class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1 tabular-nums">${totalNoDuty}</p>
+        </div>
+        <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4">
+          <p class="text-xs text-zinc-500">Pending Viewing</p>
+          <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1 tabular-nums">${pendingCount}</p>
+        </div>
+      `;
+
+      const cities = ['Santa Rosa', 'Biñan', 'San Pedro'].filter(c => state.dashCityFilter === 'ALL' || state.dashCityFilter === c);
+      document.getElementById('dashCityCardsContainer').innerHTML = cities.map(city => {
+        const cityLocales = LOCALES_SEED.filter(l => l.city === city);
+        let cTotal = 0, c34 = 0, c12 = 0, cNo = 0;
+
+        const rowsHtml = cityLocales.map(loc => {
+          const r = computeLocaleRollup(loc.id);
+          cTotal += r.total; c34 += r.duty34; c12 += r.duty12; cNo += r.noDuty;
+          const rep = MONTHLY_REPORTS[loc.id];
+          const remarksText = rep ? rep.remarks : '—';
+          const editedBadge = (rep && rep.editedAfterReport)
+            ? `<span class="ml-1.5 px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[10px] font-mono">Edited after report</span>`
+            : '';
+
+          return `
+            <tr class="hover:bg-zinc-50 dark:hover:bg-obsidian-950/60">
+              <td class="py-2.5 px-4 font-medium text-zinc-900 dark:text-white">${loc.name}</td>
+              <td class="py-2.5 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">${r.duty34}</td>
+              <td class="py-2.5 px-3 text-right font-mono text-brand-700 dark:text-brand-300 font-semibold tabular-nums">${r.duty12}</td>
+              <td class="py-2.5 px-3 text-right font-mono text-rose-600 dark:text-rose-400 font-semibold tabular-nums">${r.noDuty}</td>
+              ${state.dashShowAttendedNoDuty ? `<td class="py-2.5 px-3 text-right font-mono text-zinc-500 tabular-nums">${r.attendedOnly}</td>` : ''}
+              <td class="py-2.5 px-3 text-right font-mono font-semibold text-zinc-900 dark:text-white tabular-nums">${r.total}</td>
+              <td class="py-2.5 px-4 text-zinc-500 max-w-xs truncate">${remarksText}${editedBadge}</td>
+              <td class="py-2.5 px-4 text-right">
+                <button type="button" data-open-remarks="${loc.id}" class="open-remarks-btn px-2.5 py-1 rounded border border-zinc-200 dark:border-obsidian-700 hover:border-brand-600 text-[11px] font-medium">
+                  Remarks
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        return `
+          <div class="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden">
+            <div class="px-4 py-3 bg-zinc-50 dark:bg-obsidian-950 border-b border-zinc-200 dark:border-obsidian-800 flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">${city}</h3>
+              <div class="flex items-center gap-3 text-xs font-mono text-zinc-500 tabular-nums">
+                <span>3-4 Weeks: <strong class="text-zinc-900 dark:text-white">${c34}</strong></span>
+                <span>1-2 Weeks: <strong class="text-zinc-900 dark:text-white">${c12}</strong></span>
+                <span>No Duty: <strong class="text-zinc-900 dark:text-white">${cNo}</strong></span>
+                <span>Total: <strong class="text-zinc-900 dark:text-white">${cTotal}</strong></span>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="border-b border-zinc-200 dark:border-obsidian-800 text-zinc-400">
+                  <tr>
+                    <th class="py-2 px-4 font-medium">Locale</th>
+                    <th class="py-2 px-3 text-right font-medium">3–4 Weeks</th>
+                    <th class="py-2 px-3 text-right font-medium">1–2 Weeks</th>
+                    <th class="py-2 px-3 text-right font-medium">No Duty</th>
+                    ${state.dashShowAttendedNoDuty ? '<th class="py-2 px-3 text-right font-medium">Dumalo Only</th>' : ''}
+                    <th class="py-2 px-3 text-right font-medium">Total</th>
+                    <th class="py-2 px-4 font-medium">Remarks</th>
+                    <th class="py-2 px-4 text-right font-medium">Edit</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-100 dark:divide-obsidian-800">${rowsHtml}</tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.open-remarks-btn').forEach(btn => {
+        btn.addEventListener('click', () => openRemarksModal(Number(btn.getAttribute('data-open-remarks'))));
+      });
+    }
+
+    function openRemarksModal(localeId) {
+      state.activeRemarksLocaleId = localeId;
+      const loc = LOCALES_SEED.find(l => l.id === localeId);
+      const r = computeLocaleRollup(localeId);
+      const rep = MONTHLY_REPORTS[localeId];
+
+      document.getElementById('modalRemarksLocaleTitle').textContent = `${loc.city} — ${loc.name}`;
+      document.getElementById('modalRemarksReadOnlyStats').innerHTML = `
+        <div class="p-2 rounded-lg bg-zinc-50 dark:bg-obsidian-950 border border-zinc-200 dark:border-obsidian-800">
+          <p class="text-[10px] text-zinc-400">3-4 Weeks</p>
+          <p class="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">${r.duty34}</p>
+        </div>
+        <div class="p-2 rounded-lg bg-zinc-50 dark:bg-obsidian-950 border border-zinc-200 dark:border-obsidian-800">
+          <p class="text-[10px] text-zinc-400">1-2 Weeks</p>
+          <p class="text-sm font-bold font-mono text-brand-700 dark:text-brand-400">${r.duty12}</p>
+        </div>
+        <div class="p-2 rounded-lg bg-zinc-50 dark:bg-obsidian-950 border border-zinc-200 dark:border-obsidian-800">
+          <p class="text-[10px] text-zinc-400">No Duty</p>
+          <p class="text-sm font-bold font-mono text-rose-600 dark:text-rose-400">${r.noDuty}</p>
+        </div>
+        <div class="p-2 rounded-lg bg-zinc-50 dark:bg-obsidian-950 border border-zinc-200 dark:border-obsidian-800">
+          <p class="text-[10px] text-zinc-400">Total</p>
+          <p class="text-sm font-bold font-mono">${r.total}</p>
+        </div>
+      `;
+      document.getElementById('modalRemarksTextarea').value = rep ? rep.remarks : '';
+      document.getElementById('modalRemarks').classList.remove('hidden');
+    }
+
+    function renderOfficerInboxAndLiveBoard() {
+      const pending = getPendingEntries();
+      const inboxEl = document.getElementById('pendingInboxList');
+      if (pending.length === 0) {
+        inboxEl.innerHTML = `<div class="p-6 rounded-lg border border-dashed border-zinc-200 dark:border-obsidian-800 text-center text-xs text-zinc-400">No pending viewing entries.</div>`;
+      } else {
+        const byLocale = {};
+        pending.forEach(item => {
+          if (!byLocale[item.locale.id]) byLocale[item.locale.id] = { locale: item.locale, items: [] };
+          byLocale[item.locale.id].items.push(item);
+        });
+
+        inboxEl.innerHTML = Object.values(byLocale).map(group => `
+          <div class="rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50/50 dark:bg-obsidian-950 p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-zinc-900 dark:text-white">${group.locale.city} — ${group.locale.name}</span>
+              <button type="button" data-confirm-locale="${group.locale.id}" class="confirm-locale-btn px-2.5 py-1 rounded bg-brand-800 text-white text-[11px] font-medium">
+                Confirm All for ${group.locale.name}
+              </button>
+            </div>
+            <div class="divide-y divide-zinc-200 dark:divide-obsidian-800">
+              ${group.items.map(it => `
+                <div class="py-2 flex items-center justify-between gap-2 text-xs">
+                  <div>
+                    <p class="font-medium text-zinc-900 dark:text-white">${it.member.fullName}</p>
+                    <p class="text-[11px] text-zinc-400">${it.session.label} · Status: <strong class="font-mono text-zinc-700 dark:text-zinc-200">${it.log.status}</strong></p>
+                  </div>
+                  <button type="button" data-confirm-single="${it.member.id}_${it.session.id}" class="confirm-single-btn px-2.5 py-1 rounded border border-zinc-300 dark:border-obsidian-700 hover:border-brand-600 text-[11px] font-medium">
+                    Confirm
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('');
+
+        document.querySelectorAll('.confirm-locale-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const locId = Number(btn.getAttribute('data-confirm-locale'));
+            pending.filter(p => p.locale.id === locId).forEach(p => { p.log.confirmed = true; });
+            showToast('Locale viewing entries confirmed.');
+            renderOfficerView();
+          });
+        });
+
+        document.querySelectorAll('.confirm-single-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const key = btn.getAttribute('data-confirm-single');
+            if (ATTENDANCE_LOGS[key]) ATTENDANCE_LOGS[key].confirmed = true;
+            showToast('Viewing entry confirmed.');
+            renderOfficerView();
+          });
+        });
+      }
+
+      const cityFilter = document.getElementById('liveBoardCityFilter').value;
+      const localeFilterEl = document.getElementById('liveBoardLocaleFilter');
+      const prevLocaleVal = localeFilterEl ? localeFilterEl.value : 'ALL';
+
+      const localesForCity = LOCALES_SEED.filter(l => cityFilter === 'ALL' || l.city === cityFilter);
+      if (localeFilterEl) {
+        const stillValid = prevLocaleVal === 'ALL' || localesForCity.some(l => String(l.id) === String(prevLocaleVal));
+        const activeLocVal = stillValid ? prevLocaleVal : 'ALL';
+        localeFilterEl.innerHTML = `<option value="ALL">All Locales (${localesForCity.length})</option>` +
+          localesForCity.map(l => `<option value="${l.id}" ${String(l.id) === String(activeLocVal) ? 'selected' : ''}>${l.city} — ${l.name}</option>`).join('');
+      }
+      const selectedLocaleVal = localeFilterEl ? localeFilterEl.value : 'ALL';
+      const displayedLocales = localesForCity.filter(l => selectedLocaleVal === 'ALL' || String(l.id) === String(selectedLocaleVal));
+
+      let countS = 0, countP = 0, countD = 0, countA = 0;
+
+      const badgeColor = {
+        'S': 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border-emerald-500/30',
+        'P': 'text-brand-700 dark:text-brand-300 bg-brand-500/15 border-brand-500/30',
+        'D': 'text-amber-700 dark:text-amber-300 bg-amber-500/15 border-amber-500/30',
+        'A': 'text-rose-600 dark:text-rose-400 bg-rose-500/15 border-rose-500/30',
+        'N': 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20'
+      };
+
+      const localeCardsHtml = displayedLocales.map(loc => {
+        const locMembers = MEMBERS_SEED.filter(m => m.localeId === loc.id && !m.leftAt);
+        let locS = 0, locP = 0, locD = 0, locA = 0;
+
+        const memberRowsHtml = locMembers.map(m => {
+          const log = ATTENDANCE_LOGS[`${m.id}_w4-tg`] || { status: 'N', source: 'none' };
+          if (log.status === 'S') { countS++; locS++; }
+          else if (log.status === 'P') { countP++; locP++; }
+          else if (log.status === 'D') { countD++; locD++; }
+          else if (log.status === 'A') { countA++; locA++; }
+
+          const bCls = badgeColor[log.status] || badgeColor['N'];
+          return `
+            <div class="py-1.5 px-3 flex items-center justify-between text-xs hover:bg-zinc-100/60 dark:hover:bg-obsidian-900/60">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-zinc-900 dark:text-white">${m.fullName}</span>
+                <span class="text-[10px] text-zinc-400 font-mono">(${log.source})</span>
+              </div>
+              <span class="font-mono font-bold text-[11px] px-2 py-0.5 rounded border ${bCls}">${log.status}</span>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50/40 dark:bg-obsidian-950 overflow-hidden">
+            <div class="px-3.5 py-2 bg-zinc-100/80 dark:bg-obsidian-900 border-b border-zinc-200 dark:border-obsidian-800 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-zinc-950 dark:text-white">${loc.city} — ${loc.name}</span>
+                <span class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-zinc-200/70 dark:bg-obsidian-800 text-zinc-500">${loc.code}</span>
+              </div>
+              <div class="flex items-center gap-1.5 font-mono text-[11px] tabular-nums">
+                <span class="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold">S:${locS}</span>
+                <span class="px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-700 dark:text-brand-300 font-semibold">P:${locP}</span>
+                <span class="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold">D:${locD}</span>
+                <span class="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 font-semibold">A:${locA}</span>
+              </div>
+            </div>
+            <div class="divide-y divide-zinc-200/60 dark:divide-obsidian-800/80">
+              ${memberRowsHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('liveBoardStatsRow').innerHTML = `
+        <div class="p-2.5 rounded-lg bg-zinc-50 dark:bg-obsidian-950 border border-zinc-200 dark:border-obsidian-800 text-center">
+          <p class="text-[10px] text-zinc-400">Sumayaw (S)</p>
+          <p class="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">${countS}</p>
+        </div>
+        <div class="p-2.5 rounded-lg bg-zinc-50 dark:bg-obsidian-950 border border-zinc-200 dark:border-obsidian-800 text-center">
+          <p class="text-[10px] text-zinc-400">Program (P)</p>
+          <p class="text-base font-bold font-mono text-brand-700 dark:text-brand-400 tabular-nums">${countP}</p>
+        </div>
+        <div class="p-2.5 rounded-lg bg-zinc-50 dark:bg-obsidian-950 border border-zinc-200 dark:border-obsidian-800 text-center">
+          <p class="text-[10px] text-zinc-400">Dumalo (D)</p>
+          <p class="text-base font-bold font-mono text-amber-600 dark:text-amber-400 tabular-nums">${countD}</p>
+        </div>
+        <div class="p-2.5 rounded-lg bg-zinc-50 dark:bg-obsidian-950 border border-zinc-200 dark:border-obsidian-800 text-center">
+          <p class="text-[10px] text-zinc-400">Absent (A)</p>
+          <p class="text-base font-bold font-mono text-rose-600 dark:text-rose-400 tabular-nums">${countA}</p>
+        </div>
+      `;
+
+      document.getElementById('liveBoardFeed').innerHTML = localeCardsHtml;
+    }
+
+    function openRenameMemberModal(memberId) {
+      const member = MEMBERS_SEED.find(m => m.id === memberId);
+      if (!member) return;
+      document.getElementById('modalAdminActionTitle').textContent = 'Edit Member Name or Locale';
+      document.getElementById('modalAdminActionBody').innerHTML = `
+        <div class="space-y-3">
+          <div>
+            <label class="block font-medium mb-1">Member Full Name</label>
+            <input id="editMemberNameInput" type="text" value="${member.fullName}" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-medium text-zinc-950 dark:text-white" />
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Assigned Locale</label>
+            <select id="editMemberLocaleSelect" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs text-zinc-950 dark:text-white">
+              ${LOCALES_SEED.map(l => `<option value="${l.id}" ${l.id === member.localeId ? 'selected' : ''}>${l.city} — ${l.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="flex items-center justify-between pt-2">
+            <button type="button" id="deactivateMemberConfirmBtn" class="px-3 py-1.5 rounded-lg border border-rose-500/40 text-rose-600 dark:text-rose-400 text-xs font-medium hover:bg-rose-500/10">
+              Remove / Deactivate
+            </button>
+            <button type="button" id="saveMemberRenameConfirmBtn" class="px-4 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      `;
+      document.getElementById('modalAdminAction').classList.remove('hidden');
+
+      document.getElementById('saveMemberRenameConfirmBtn').addEventListener('click', () => {
+        const updatedName = document.getElementById('editMemberNameInput').value.trim();
+        const updatedLocaleId = Number(document.getElementById('editMemberLocaleSelect').value);
+        if (updatedName) member.fullName = updatedName;
+        member.localeId = updatedLocaleId;
+        document.getElementById('modalAdminAction').classList.add('hidden');
+        if (state.currentRoleView === 'officer') renderOfficerView();
+        if (state.currentRoleView === 'coordinator') renderCoordinatorView();
+        if (state.currentRoleView === 'tk') renderTkView();
+        showToast(`Updated member: ${member.fullName}`);
+      });
+
+      document.getElementById('deactivateMemberConfirmBtn').addEventListener('click', () => {
+        member.leftAt = '2026-10-26';
+        document.getElementById('modalAdminAction').classList.add('hidden');
+        if (state.currentRoleView === 'officer') renderOfficerView();
+        if (state.currentRoleView === 'coordinator') renderCoordinatorView();
+        if (state.currentRoleView === 'tk') renderTkView();
+        showToast(`Deactivated ${member.fullName}`);
+      });
+    }
+
+    function openCellEditModal(memberId, sessionId) {
+      state.activeEditCell = { memberId, sessionId };
+      const member = MEMBERS_SEED.find(m => m.id === memberId);
+      const sess = SESSIONS_SEED.find(s => s.id === sessionId);
+      const log = ATTENDANCE_LOGS[`${memberId}_${sessionId}`] || { status: 'N', source: 'officer', confirmed: true };
+
+      document.getElementById('modalCellTitle').textContent = `${member.fullName} — ${sess.label}`;
+      document.getElementById('modalCellMeta').innerHTML = `
+        <p>Date: ${sess.date} (Week ${sess.weekNum}) · Current: <strong class="font-mono">${log.status}</strong> (${log.source})</p>
+      `;
+      document.getElementById('modalNewStatusSelect').value = log.status;
+      document.getElementById('modalEditReasonInput').value = '';
+      document.getElementById('modalCellEdit').classList.remove('hidden');
+    }
+
+    function renderOfficerAdmin() {
+      document.getElementById('adminSessionsCount').textContent = `${SESSIONS_SEED.length} sessions`;
+      document.getElementById('adminSessionsList').innerHTML = SESSIONS_SEED.map(s => `
+        <div class="px-3 py-2 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50/50 dark:bg-obsidian-950 flex items-center justify-between text-xs">
+          <div>
+            <span class="font-mono font-semibold text-zinc-900 dark:text-white">${s.label}</span>
+            <span class="text-zinc-400"> · ${s.date}</span>
+          </div>
+          <span class="text-[10px] font-mono uppercase text-zinc-500">${s.statusWindow}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('adminLocalesTbody').innerHTML = LOCALES_SEED.map(loc => `
+        <tr>
+          <td class="py-2 px-2">
+            <span class="font-medium text-zinc-900 dark:text-white">${loc.name}</span>
+            <span class="text-[11px] text-zinc-400 block">${loc.city}</span>
+          </td>
+          <td class="py-2 px-2 font-mono text-zinc-700 dark:text-zinc-300">${loc.code}</td>
+          <td class="py-2 px-2 text-zinc-600 dark:text-zinc-400">
+            <span class="font-medium text-zinc-800 dark:text-zinc-200">${loc.coordinator}</span>
+          </td>
+          <td class="py-2 px-2 font-mono text-[11px]">${loc.failedAttempts >= 5 ? 'Locked' : 'OK'}</td>
+          <td class="py-2 px-2 text-right space-x-1 whitespace-nowrap">
+            <button type="button" data-edit-coord="${loc.id}" class="edit-coord-btn px-2 py-1 rounded border border-zinc-200 dark:border-obsidian-700 hover:border-brand-600 text-[10px] font-medium">Edit Name</button>
+            <button type="button" data-regen-code="${loc.id}" class="regen-code-btn px-2 py-1 rounded border border-zinc-200 dark:border-obsidian-700 text-[10px] font-medium">Regen Code</button>
+            <button type="button" data-reset-pin="${loc.id}" class="reset-pin-btn px-2 py-1 rounded border border-zinc-200 dark:border-obsidian-700 text-[10px] font-medium">Reset PIN</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.querySelectorAll('.regen-code-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.getAttribute('data-regen-code'));
+          const loc = LOCALES_SEED.find(l => l.id === id);
+          loc.code = `${loc.code.slice(0, 5)}${Math.floor(10 + Math.random() * 89)}`;
+          showToast(`New code for ${loc.name}: ${loc.code}`);
+          renderOfficerAdmin();
+        });
+      });
+
+      document.querySelectorAll('.reset-pin-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.getAttribute('data-reset-pin'));
+          const loc = LOCALES_SEED.find(l => l.id === id);
+          loc.failedAttempts = 0;
+          showToast(`PIN reset for ${loc.name}`);
+          renderOfficerAdmin();
+        });
+      });
+
+      document.querySelectorAll('.edit-coord-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.getAttribute('data-edit-coord'));
+          const loc = LOCALES_SEED.find(l => l.id === id);
+          if (!loc) return;
+          document.getElementById('modalAdminActionTitle').textContent = `Edit Coordinator — ${loc.city} (${loc.name})`;
+          document.getElementById('modalAdminActionBody').innerHTML = `
+            <div class="space-y-3">
+              <div>
+                <label class="block font-medium mb-1">Coordinator Full Name</label>
+                <input id="editCoordNameInput" type="text" value="${loc.coordinator}" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-medium text-zinc-950 dark:text-white" />
+              </div>
+              <div>
+                <label class="block font-medium mb-1">Coordinator Contact Number</label>
+                <input id="editCoordContactInput" type="text" value="${loc.contact}" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs text-zinc-950 dark:text-white" />
+              </div>
+              <div>
+                <label class="block font-medium mb-1">Coordinator 4–6 Digit PIN</label>
+                <input id="editCoordPinInput" type="text" value="${loc.pin}" maxlength="6" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 font-mono text-xs text-zinc-950 dark:text-white" />
+              </div>
+              <div class="flex justify-end pt-2">
+                <button type="button" id="saveCoordEditConfirmBtn" class="px-4 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold">Save Coordinator</button>
+              </div>
+            </div>
+          `;
+          document.getElementById('modalAdminAction').classList.remove('hidden');
+          document.getElementById('saveCoordEditConfirmBtn').addEventListener('click', () => {
+            loc.coordinator = document.getElementById('editCoordNameInput').value.trim() || loc.coordinator;
+            loc.contact = document.getElementById('editCoordContactInput').value.trim() || loc.contact;
+            loc.pin = document.getElementById('editCoordPinInput').value.trim() || loc.pin;
+            document.getElementById('modalAdminAction').classList.add('hidden');
+            renderOfficerAdmin();
+            showToast(`Updated coordinator for ${loc.name}: ${loc.coordinator}`);
+          });
+        });
+      });
+    }
+
+    function renderOfficerReports() {
+      document.getElementById('snapshotCountBadge').textContent = String(OFFICIAL_SNAPSHOTS.length);
+      document.querySelectorAll('.report-sheet-btn').forEach(btn => {
+        const active = btn.getAttribute('data-report-sheet') === state.reportSheet;
+        btn.className = active
+          ? 'report-sheet-btn px-3 py-1 rounded-md text-xs font-semibold bg-white dark:bg-obsidian-800 text-zinc-950 dark:text-white shadow-2xs'
+          : 'report-sheet-btn px-3 py-1 rounded-md text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white';
+      });
+
+      const container = document.getElementById('reportSheetPreviewContainer');
+      if (state.reportSheet === 'overall') {
+        const rows = MEMBERS_SEED.filter(m => !m.leftAt).slice(0, 35).map(m => {
+          const loc = LOCALES_SEED.find(l => l.id === m.localeId);
+          const r = computeMemberMonthlyRollup(m.id);
+          return `
+            <tr class="hover:bg-zinc-50 dark:hover:bg-obsidian-950/50">
+              <td class="py-2 px-4 text-zinc-500">${loc.city}</td>
+              <td class="py-2 px-4 font-medium">${loc.name}</td>
+              <td class="py-2 px-4 font-medium text-zinc-900 dark:text-white">${m.fullName}</td>
+              <td class="py-2 px-3 text-center font-mono tabular-nums">${r.weeksDuty}</td>
+              <td class="py-2 px-4 font-medium">${r.bucket}</td>
+              ${[1,2,3,4].map(w => `<td class="py-2 px-2 text-center font-mono">${r.weekMarkers[w]}</td>`).join('')}
+            </tr>
+          `;
+        }).join('');
+
+        container.innerHTML = `
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-zinc-50 dark:bg-obsidian-950 border-b border-zinc-200 dark:border-obsidian-800 text-zinc-400">
+                <tr>
+                  <th class="py-2 px-4 font-medium">City</th>
+                  <th class="py-2 px-4 font-medium">Locale</th>
+                  <th class="py-2 px-4 font-medium">Member</th>
+                  <th class="py-2 px-3 text-center font-medium">Weeks Duty</th>
+                  <th class="py-2 px-4 font-medium">Status</th>
+                  <th class="py-2 px-2 text-center font-medium">Week 1</th>
+                  <th class="py-2 px-2 text-center font-medium">Week 2</th>
+                  <th class="py-2 px-2 text-center font-medium">Week 3</th>
+                  <th class="py-2 px-2 text-center font-medium">Week 4</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-zinc-100 dark:divide-obsidian-800">${rows}</tbody>
+            </table>
+          </div>
+        `;
+      } else if (state.reportSheet === 'district') {
+        const rows = LOCALES_SEED.map(loc => {
+          const r = computeLocaleRollup(loc.id);
+          const rep = MONTHLY_REPORTS[loc.id];
+          return `
+            <tr>
+              <td class="py-2 px-4 text-zinc-500">${loc.city}</td>
+              <td class="py-2 px-4 font-medium text-zinc-900 dark:text-white">${loc.name}</td>
+              <td class="py-2 px-3 text-right font-mono tabular-nums">${r.duty34}</td>
+              <td class="py-2 px-3 text-right font-mono tabular-nums">${r.duty12}</td>
+              <td class="py-2 px-3 text-right font-mono tabular-nums">${r.noDuty}</td>
+              <td class="py-2 px-3 text-right font-mono font-semibold tabular-nums">${r.total}</td>
+              <td class="py-2 px-4 text-zinc-500">${rep ? rep.remarks : '—'}</td>
+            </tr>
+          `;
+        }).join('');
+        container.innerHTML = `
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-zinc-50 dark:bg-obsidian-950 border-b border-zinc-200 dark:border-obsidian-800 text-zinc-400">
+                <tr>
+                  <th class="py-2 px-4 font-medium">City</th>
+                  <th class="py-2 px-4 font-medium">Locale</th>
+                  <th class="py-2 px-3 text-right font-medium">3–4 Weeks</th>
+                  <th class="py-2 px-3 text-right font-medium">1–2 Weeks</th>
+                  <th class="py-2 px-3 text-right font-medium">No Duty</th>
+                  <th class="py-2 px-3 text-right font-medium">Total</th>
+                  <th class="py-2 px-4 font-medium">Remarks</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-zinc-100 dark:divide-obsidian-800">${rows}</tbody>
+            </table>
+          </div>
+        `;
+      } else if (state.reportSheet === 'locale_grid') {
+        const dilaMembers = MEMBERS_SEED.filter(m => m.localeId === state.gridLocaleId && !m.leftAt);
+        container.innerHTML = `
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-zinc-50 dark:bg-obsidian-950 border-b border-zinc-200 dark:border-obsidian-800 text-zinc-400">
+                <tr>
+                  <th class="py-2 px-4 font-medium">Member Name</th>
+                  ${SESSIONS_SEED.map(ss => `<th class="py-2 px-2 text-center font-mono font-medium">${ss.label}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-zinc-100 dark:divide-obsidian-800">
+                ${dilaMembers.map(m => `
+                  <tr>
+                    <td class="py-2 px-4 font-medium text-zinc-900 dark:text-white">${m.fullName}</td>
+                    ${SESSIONS_SEED.map(ss => {
+                      const lg = ATTENDANCE_LOGS[`${m.id}_${ss.id}`] || { status: 'N' };
+                      return `<td class="py-2 px-2 text-center font-mono">${lg.status}</td>`;
+                    }).join('')}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } else if (state.reportSheet === 'no_duty') {
+        const noDutyMembers = MEMBERS_SEED.filter(m => !m.leftAt && computeMemberMonthlyRollup(m.id).weeksDuty === 0);
+        container.innerHTML = `
+          <div class="p-4 divide-y divide-zinc-100 dark:divide-obsidian-800 text-xs">
+            ${noDutyMembers.map(m => {
+              const loc = LOCALES_SEED.find(l => l.id === m.localeId);
+              return `
+                <div class="py-2 flex items-center justify-between">
+                  <span class="font-medium text-zinc-900 dark:text-white">${m.fullName}</span>
+                  <span class="text-zinc-500">${loc.city} — ${loc.name}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="p-4 space-y-2">
+            ${OFFICIAL_SNAPSHOTS.map(s => `
+              <div class="p-3 rounded-lg border border-zinc-200 dark:border-obsidian-800 flex items-center justify-between gap-3 text-xs">
+                <div>
+                  <p class="font-semibold text-zinc-900 dark:text-white">${s.monthYear} — ${s.type}</p>
+                  <p class="text-zinc-400">Saved ${s.createdAt} by ${s.createdBy}</p>
+                </div>
+                <button type="button" data-redownload-snap="${s.id}" class="redownload-snap-btn px-3 py-1.5 rounded-lg bg-brand-800 text-white font-medium text-xs">
+                  Re-Download Identical Snapshot
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        document.querySelectorAll('.redownload-snap-btn').forEach(btn => {
+          btn.addEventListener('click', () => triggerReportDownload('csv', true));
+        });
+      }
+    }
+
+    function triggerReportDownload(ext, isSnapshot = false) {
+      const saveOfficial = document.getElementById('reportSaveOfficialCheckbox').checked;
+      if (saveOfficial && !isSnapshot) {
+        OFFICIAL_SNAPSHOTS.unshift({
+          id: `snap-${Date.now()}`,
+          monthYear: '2026-10',
+          type: `Official ${ext.toUpperCase()} Snapshot`,
+          createdBy: 'Daniel Reyes',
+          createdAt: 'Just now',
+          totalMembers: MEMBERS_SEED.length,
+          duty34: 48,
+          duty12: 22,
+          noDuty: 12
+        });
+      }
+      const lines = [
+        'CONFIDENTIAL - LNATK ATTENDANCE PLATFORM',
+        'City,Locale,Member Name,Weeks With Duty,Overall Status,Week 1,Week 2,Week 3,Week 4'
+      ];
+      MEMBERS_SEED.filter(m => !m.leftAt).forEach(m => {
+        const loc = LOCALES_SEED.find(l => l.id === m.localeId);
+        const r = computeMemberMonthlyRollup(m.id);
+        lines.push(`"${loc.city}","${loc.name}","${m.fullName}",${r.weeksDuty},"${r.bucket}",${r.weekMarkers[1]},${r.weekMarkers[2]},${r.weekMarkers[3]},${r.weekMarkers[4]}`);
+      });
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `LNATK_Report_2026-10.${ext === 'xlsx' ? 'csv' : ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast(`Exported ${ext.toUpperCase()} report`);
+      renderOfficerReports();
+    }
+
+    function openMobileSidebar() {
+      document.getElementById('appSidebar').classList.remove('-translate-x-full');
+      document.getElementById('mobileSidebarBackdrop').classList.remove('hidden');
+    }
+
+    function closeMobileSidebar() {
+      document.getElementById('appSidebar').classList.add('-translate-x-full');
+      document.getElementById('mobileSidebarBackdrop').classList.add('hidden');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        const savedTheme = localStorage.getItem('lnatk_theme');
+        if (savedTheme === 'light') document.documentElement.classList.remove('dark');
+      } catch (e) {}
+
+      document.getElementById('themeToggleBtn').addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('lnatk_theme', isDark ? 'dark' : 'light'); } catch (e) {}
+      });
+
+      document.getElementById('openMobileSidebarBtn').addEventListener('click', openMobileSidebar);
+      document.getElementById('closeMobileSidebarBtn').addEventListener('click', closeMobileSidebar);
+      document.getElementById('mobileSidebarBackdrop').addEventListener('click', closeMobileSidebar);
+
+      document.getElementById('brandHomeBtn').addEventListener('click', () => {
+        setRoleView('officer');
+        setOfficerTab('grid');
+      });
+
+      document.querySelectorAll('[data-role-nav]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          closeMobileSidebar();
+          setRoleView(btn.getAttribute('data-role-nav'));
+        });
+      });
+
+      document.querySelectorAll('[data-goto-role]').forEach(btn => {
+        btn.addEventListener('click', () => setRoleView(btn.getAttribute('data-goto-role')));
+      });
+
+      document.querySelectorAll('.officer-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          closeMobileSidebar();
+          if (state.currentRoleView !== 'officer') setRoleView('officer');
+          setOfficerTab(btn.getAttribute('data-officer-tab'));
+        });
+      });
+
+      document.getElementById('simTimeWindowSelect').addEventListener('change', (e) => {
+        state.simWindow = e.target.value;
+        if (state.currentRoleView === 'tk') updateTkSessionContext();
+        showToast(`Window: ${e.target.options[e.target.selectedIndex].text}`);
+      });
+
+      document.getElementById('tkVerifyLocaleBtn').addEventListener('click', () => {
+        const code = document.getElementById('tkLocaleCodeInput').value.trim().toUpperCase();
+        const found = LOCALES_SEED.find(l => l.code.toUpperCase() === code);
+        if (!found) {
+          showToast('Invalid locale code');
+          return;
+        }
+        state.tkLocaleId = found.id;
+        updateTopBreadcrumbs();
+        renderTkView();
+        showToast(`Loaded ${found.name}`);
+      });
+
+      document.querySelectorAll('.tk-sample-code').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const code = btn.getAttribute('data-sample-code');
+          document.getElementById('tkLocaleCodeInput').value = code;
+          const found = LOCALES_SEED.find(l => l.code === code);
+          if (found) {
+            state.tkLocaleId = found.id;
+            updateTopBreadcrumbs();
+            renderTkView();
+          }
+        });
+      });
+
+      document.getElementById('tkSessionSelect').addEventListener('change', () => {
+        updateTkSessionContext();
+        renderCoordinatorView();
+        renderTkView();
+      });
+      const tkModeSel = document.getElementById('tkAttendanceModeSelect');
+      if (tkModeSel) {
+        tkModeSel.addEventListener('change', updateTkSessionContext);
+      }
+      const coordSessSel = document.getElementById('coordSessionSelect');
+      if (coordSessSel) {
+        coordSessSel.addEventListener('change', renderCoordinatorView);
+      }
+
+      document.getElementById('tkSubmitBtn').addEventListener('click', () => {
+        const memberId = document.getElementById('tkMemberSelect').value;
+        const sessionId = document.getElementById('tkSessionSelect').value;
+        const member = MEMBERS_SEED.find(m => m.id === memberId);
+        const sess = SESSIONS_SEED.find(s => s.id === sessionId);
+        const isOfflineSim = document.getElementById('tkOfflineSimToggle').checked;
+
+        const existing = ATTENDANCE_LOGS[`${memberId}_${sessionId}`];
+        if (existing && existing.confirmed && (existing.status === 'S' || existing.status === 'P') && (state.tkSelectedStatus !== 'S' && state.tkSelectedStatus !== 'P')) {
+          showToast(`Confirmed ${existing.status} duty entry cannot be downgraded.`);
+          return;
+        }
+
+        const modeSelect = document.getElementById('tkAttendanceModeSelect');
+        const isViewing = (modeSelect && modeSelect.value === 'viewing') || (sess.type === 'TG' && state.simWindow === 'tg_viewing');
+        if (sess.type === 'TG' && !isViewing) {
+          const enteredCode = document.getElementById('tkSessionCodeInput').value.trim().toUpperCase();
+          if (enteredCode !== (sess.code || 'TG-8821')) {
+            showToast('Invalid venue session code.');
+            return;
+          }
+        }
+
+        const newRecord = {
+          memberId,
+          sessionId,
+          status: state.tkSelectedStatus,
+          source: 'coordinator',
+          attendedVia: sess.type === 'TG' ? (isViewing ? 'viewing' : 'live') : null,
+          confirmed: !isViewing,
+          updatedAt: 'Just now'
+        };
+
+        if (isOfflineSim) {
+          state.tkOfflineQueue.push({ key: `${memberId}_${sessionId}`, record: newRecord });
+          document.getElementById('tkQueueCount').textContent = String(state.tkOfflineQueue.length);
+          document.getElementById('tkOfflineQueueBar').classList.remove('hidden');
+          showToast(`Queued offline: ${member.fullName}`);
+        } else {
+          ATTENDANCE_LOGS[`${memberId}_${sessionId}`] = newRecord;
+          updatePendingBadges();
+          showToast(`Saved ${member.fullName}: ${state.tkSelectedStatus}`);
+        }
+
+        const receipt = document.getElementById('tkReceiptBox');
+        receipt.className = 'rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-800 dark:text-emerald-200';
+        receipt.innerHTML = `Updated table: <strong>${member.fullName}</strong> → <strong class="font-mono">${state.tkSelectedStatus}</strong> (${isViewing ? 'Viewing' : 'Live'})`;
+        renderCoordinatorView();
+        renderTkView();
+      });
+
+      document.getElementById('tkSyncQueueBtn').addEventListener('click', () => {
+        state.tkOfflineQueue.forEach(item => { ATTENDANCE_LOGS[item.key] = item.record; });
+        state.tkOfflineQueue = [];
+        document.getElementById('tkOfflineQueueBar').classList.add('hidden');
+        updatePendingBadges();
+        showToast('Offline queue synced.');
+      });
+
+      document.getElementById('coordUnlockBtn').addEventListener('click', () => {
+        const code = document.getElementById('coordLocaleInput').value.trim().toUpperCase();
+        const pin = document.getElementById('coordPinInput').value.trim();
+        const loc = LOCALES_SEED.find(l => l.code === code);
+        if (!loc) {
+          showToast('Locale code not found');
+          return;
+        }
+        state.coordLocaleId = loc.id;
+        if (loc.failedAttempts >= 5) {
+          renderCoordinatorView();
+          return;
+        }
+        if (pin !== loc.pin) {
+          loc.failedAttempts += 1;
+          state.coordUnlocked = false;
+          showToast(`Incorrect PIN (${loc.failedAttempts}/5)`);
+          renderCoordinatorView();
+          return;
+        }
+        loc.failedAttempts = 0;
+        state.coordUnlocked = true;
+        state.coordDraftStatuses = {};
+        updateTopBreadcrumbs();
+        renderCoordinatorView();
+        showToast(`Unlocked ${loc.name}`);
+      });
+
+      document.getElementById('coordMarkAllSBtn').addEventListener('click', () => {
+        MEMBERS_SEED.filter(m => m.localeId === state.coordLocaleId && !m.leftAt).forEach(m => {
+          state.coordDraftStatuses[m.id] = 'S';
+        });
+        renderCoordinatorView();
+      });
+
+      document.getElementById('coordClearAllBtn').addEventListener('click', () => {
+        state.coordDraftStatuses = {};
+        renderCoordinatorView();
+      });
+
+      document.getElementById('coordSubmitBatchBtn').addEventListener('click', () => {
+        const sessId = document.getElementById('coordSessionSelect').value || 'w4-tg';
+        const keys = Object.keys(state.coordDraftStatuses);
+        if (keys.length === 0) {
+          showToast('Select at least one member status.');
+          return;
+        }
+        const batchModeEl = document.getElementById('coordBatchModeSelect');
+        const isViewingBatch = batchModeEl && batchModeEl.value === 'viewing';
+        keys.forEach(mId => {
+          ATTENDANCE_LOGS[`${mId}_${sessId}`] = {
+            memberId: mId,
+            sessionId: sessId,
+            status: state.coordDraftStatuses[mId],
+            source: 'coordinator',
+            attendedVia: isViewingBatch ? 'viewing' : 'live',
+            confirmed: !isViewingBatch,
+            updatedAt: 'Just now'
+          };
+        });
+        updatePendingBadges();
+        showToast(`Submitted ${keys.length} ${isViewingBatch ? 'viewing' : 'live'} entries to table`);
+        state.coordDraftStatuses = {};
+        renderCoordinatorView();
+      });
+
+      document.getElementById('dashCityFilter').addEventListener('change', (e) => {
+        state.dashCityFilter = e.target.value;
+        renderOfficerDashboard();
+      });
+      document.getElementById('dashShowNoDutyAttendedToggle').addEventListener('change', (e) => {
+        state.dashShowAttendedNoDuty = e.target.checked;
+        renderOfficerDashboard();
+      });
+      document.getElementById('dashMonthSelect').addEventListener('change', renderOfficerDashboard);
+
+      document.getElementById('confirmAllDistrictPendingBtn').addEventListener('click', () => {
+        getPendingEntries().forEach(p => { p.log.confirmed = true; });
+        showToast('All pending entries confirmed');
+        renderOfficerView();
+      });
+      document.getElementById('liveBoardCityFilter').addEventListener('change', () => {
+        const lf = document.getElementById('liveBoardLocaleFilter');
+        if (lf) lf.value = 'ALL';
+        renderOfficerInboxAndLiveBoard();
+      });
+      const liveLocFilter = document.getElementById('liveBoardLocaleFilter');
+      if (liveLocFilter) {
+        liveLocFilter.addEventListener('change', renderOfficerInboxAndLiveBoard);
+      }
+
+      document.getElementById('gridLocaleSelect').addEventListener('change', (e) => {
+        state.gridLocaleId = Number(e.target.value);
+        updateTopBreadcrumbs();
+        renderSidebarLocalesTree();
+        renderOfficerWeeklyGrid();
+      });
+      document.getElementById('gridSearchMember').addEventListener('input', (e) => {
+        state.gridSearch = e.target.value;
+        renderOfficerWeeklyGrid();
+      });
+
+      const closeCellModal = () => document.getElementById('modalCellEdit').classList.add('hidden');
+      document.getElementById('closeCellEditModalBtn').addEventListener('click', closeCellModal);
+      document.getElementById('cancelCellEditBtn').addEventListener('click', closeCellModal);
+      document.getElementById('saveCellEditBtn').addEventListener('click', () => {
+        if (!state.activeEditCell) return;
+        const { memberId, sessionId } = state.activeEditCell;
+        const newSt = document.getElementById('modalNewStatusSelect').value;
+        const reason = document.getElementById('modalEditReasonInput').value.trim() || 'Officer override';
+        const prev = ATTENDANCE_LOGS[`${memberId}_${sessionId}`] || { status: 'N' };
+        const member = MEMBERS_SEED.find(m => m.id === memberId);
+        const loc = LOCALES_SEED.find(l => l.id === member.localeId);
+        const sess = SESSIONS_SEED.find(s => s.id === sessionId);
+
+        ATTENDANCE_LOGS[`${memberId}_${sessionId}`] = {
+          memberId,
+          sessionId,
+          status: newSt,
+          source: 'officer',
+          attendedVia: 'live',
+          confirmed: true,
+          updatedAt: 'Just now'
+        };
+
+        EDIT_HISTORY.unshift({
+          id: `ed-${Date.now()}`,
+          memberName: member.fullName,
+          localeName: loc.name,
+          sessionLabel: sess.label,
+          oldStatus: prev.status,
+          newStatus: newSt,
+          by: 'Daniel Reyes',
+          at: 'Just now',
+          reason
+        });
+
+        if (MONTHLY_REPORTS[loc.id]) MONTHLY_REPORTS[loc.id].editedAfterReport = true;
+        closeCellModal();
+        renderOfficerWeeklyGrid();
+        showToast(`Updated ${member.fullName} → ${newSt}`);
+      });
+
+      const closeRemarks = () => document.getElementById('modalRemarks').classList.add('hidden');
+      document.getElementById('closeRemarksModalBtn').addEventListener('click', closeRemarks);
+      document.getElementById('cancelRemarksBtn').addEventListener('click', closeRemarks);
+      document.getElementById('saveRemarksBtn').addEventListener('click', () => {
+        if (!state.activeRemarksLocaleId) return;
+        const text = document.getElementById('modalRemarksTextarea').value.trim();
+        MONTHLY_REPORTS[state.activeRemarksLocaleId] = {
+          remarks: text || 'No additional notes.',
+          submittedAt: '2026-10-24',
+          editedAfterReport: false
+        };
+        closeRemarks();
+        renderOfficerView();
+        showToast('Remarks saved');
+      });
+
+      document.getElementById('btnGenerateWeekSessions').addEventListener('click', () => {
+        if (SESSIONS_SEED.some(s => s.id === 'w5-tg')) {
+          showToast('Week 5 sessions already generated');
+          return;
+        }
+        SESSIONS_SEED.push(
+          { id: 'w5-pm', type: 'PM', label: 'Week 5 PM', shortLabel: 'PM', date: '2026-10-28', weekNum: 4, code: null, confirmViewing: false, allowed: ['D','A','S','N'], statusWindow: 'open' },
+          { id: 'w5-ws', type: 'WS', label: 'Week 5 WS', shortLabel: 'WS', date: '2026-10-31', weekNum: 4, code: null, confirmViewing: false, allowed: ['D','A','S','N'], statusWindow: 'open' },
+          { id: 'w5-tg', type: 'TG', label: 'Week 5 TG', shortLabel: 'TG', date: '2026-10-31', weekNum: 4, code: 'TG-1031', confirmViewing: true, allowed: ['D','A','S','P','N'], statusWindow: 'open' }
+        );
+        renderOfficerAdmin();
+        showToast('Generated PM, WS, and TG sessions');
+      });
+
+      const closeAdminModal = () => document.getElementById('modalAdminAction').classList.add('hidden');
+      document.getElementById('closeAdminActionModalBtn').addEventListener('click', closeAdminModal);
+
+      document.getElementById('btnOpenSpbbModal').addEventListener('click', () => {
+        document.getElementById('modalAdminActionTitle').textContent = 'Create SPBB 3-Day Event';
+        document.getElementById('modalAdminActionBody').innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <label class="block font-medium mb-1">Event Name</label>
+              <input id="spbbNameInput" type="text" value="SPBB Q4 2026" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950" />
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block font-medium mb-1">Day 1</label>
+                <input id="spbbD1Input" type="date" value="2026-10-23" class="w-full px-2 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950" />
+              </div>
+              <div>
+                <label class="block font-medium mb-1">Day 2</label>
+                <input id="spbbD2Input" type="date" value="2026-10-24" class="w-full px-2 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950" />
+              </div>
+              <div>
+                <label class="block font-medium mb-1">Day 3</label>
+                <input id="spbbD3Input" type="date" value="2026-10-25" class="w-full px-2 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950" />
+              </div>
+            </div>
+            <div class="flex justify-end pt-2">
+              <button type="button" id="spbbCreateConfirmBtn" class="px-4 py-1.5 rounded-lg bg-brand-800 text-white font-semibold">Create 3-Day SPBB Sessions</button>
+            </div>
+          </div>
+        `;
+        document.getElementById('modalAdminAction').classList.remove('hidden');
+        document.getElementById('spbbCreateConfirmBtn').addEventListener('click', () => {
+          ['D1', 'D2', 'D3'].forEach((d, idx) => {
+            SESSIONS_SEED.push({
+              id: `spbb-${d.toLowerCase()}-${Date.now()}-${idx}`,
+              type: 'SPBB',
+              label: `SPBB ${d}`,
+              shortLabel: d,
+              date: `2026-10-${23 + idx}`,
+              weekNum: 4,
+              code: `SPBB-${idx + 1}`,
+              confirmViewing: true,
+              allowed: ['D','A','S','P','N'],
+              statusWindow: 'open'
+            });
+          });
+          closeAdminModal();
+          renderOfficerAdmin();
+          showToast('Created SPBB Day 1–3 sessions');
+        });
+      });
+
+      document.getElementById('btnOpenAddSessionModal').addEventListener('click', () => {
+        document.getElementById('modalAdminActionTitle').textContent = 'Add Custom Session';
+        document.getElementById('modalAdminActionBody').innerHTML = `
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-medium mb-1">Type</label>
+                <select id="addSessType" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950">
+                  <option value="Practice">Practice</option>
+                  <option value="TG">TG</option>
+                  <option value="WS">WS</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-medium mb-1">Date</label>
+                <input id="addSessDate" type="date" value="2026-10-25" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950" />
+              </div>
+            </div>
+            <div class="flex justify-end pt-2">
+              <button type="button" id="addSessConfirmBtn" class="px-4 py-1.5 rounded-lg bg-brand-800 text-white font-semibold">Add Session</button>
+            </div>
+          </div>
+        `;
+        document.getElementById('modalAdminAction').classList.remove('hidden');
+        document.getElementById('addSessConfirmBtn').addEventListener('click', () => {
+          const t = document.getElementById('addSessType').value;
+          const d = document.getElementById('addSessDate').value;
+          SESSIONS_SEED.push({
+            id: `custom-${Date.now()}`,
+            type: t,
+            label: `Week 4 ${t}`,
+            shortLabel: t,
+            date: d,
+            weekNum: 4,
+            code: null,
+            confirmViewing: false,
+            allowed: ['D','A','S','N'],
+            statusWindow: 'open'
+          });
+          closeAdminModal();
+          renderOfficerAdmin();
+          showToast(`Added ${t} session`);
+        });
+      });
+
+      const quickAddBtn = document.getElementById('sheetQuickAddMemberBtn');
+      if (quickAddBtn) {
+        quickAddBtn.addEventListener('click', () => {
+          document.getElementById('btnOpenAddMemberModal').click();
+          const sel = document.getElementById('newMemberLocale');
+          if (sel) sel.value = String(state.gridLocaleId);
+        });
+      }
+      document.getElementById('btnOpenAddMemberModal').addEventListener('click', () => {
+        document.getElementById('modalAdminActionTitle').textContent = 'Add or Transfer Member';
+        document.getElementById('modalAdminActionBody').innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <label class="block font-medium mb-1">Full Name</label>
+              <input id="newMemberName" type="text" placeholder="Last Name, First Name" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950" />
+            </div>
+            <div>
+              <label class="block font-medium mb-1">Locale</label>
+              <select id="newMemberLocale" class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950">
+                ${LOCALES_SEED.map(l => `<option value="${l.id}">${l.city} — ${l.name}</option>`).join('')}
+              </select>
+            </div>
+            <div class="flex justify-end pt-2">
+              <button type="button" id="addMemberConfirmBtn" class="px-4 py-1.5 rounded-lg bg-brand-800 text-white font-semibold">Save Member</button>
+            </div>
+          </div>
+        `;
+        document.getElementById('modalAdminAction').classList.remove('hidden');
+        document.getElementById('addMemberConfirmBtn').addEventListener('click', () => {
+          const name = document.getElementById('newMemberName').value.trim() || 'Dela Cruz, Noah';
+          const locId = Number(document.getElementById('newMemberLocale').value);
+          MEMBERS_SEED.unshift({ id: `m-${Date.now()}`, localeId: locId, fullName: name, joinedAt: '2026-10-24', leftAt: null });
+          closeAdminModal();
+          renderOfficerView();
+          showToast(`Added ${name}`);
+        });
+      });
+
+      document.querySelectorAll('.report-sheet-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.reportSheet = btn.getAttribute('data-report-sheet');
+          renderOfficerReports();
+        });
+      });
+      document.getElementById('btnExportCsv').addEventListener('click', () => triggerReportDownload('csv'));
+      document.getElementById('btnExportXlsx').addEventListener('click', () => triggerReportDownload('xlsx'));
+
+      document.getElementById('gridCityFilterSelect').addEventListener('change', (e) => {
+        state.gridCityFilter = e.target.value;
+        renderOfficerWeeklyGrid();
+      });
+      document.getElementById('sheetModeRegularBtn').addEventListener('click', () => {
+        state.sheetMode = 'regular';
+        updateTopBreadcrumbs();
+        renderOfficerWeeklyGrid();
+      });
+      document.getElementById('sheetModePracticeBtn').addEventListener('click', () => {
+        state.sheetMode = 'practice';
+        updateTopBreadcrumbs();
+        renderOfficerWeeklyGrid();
+      });
+
+      // Wire centered Log-In box (Regular TK / Coordinator / Officer)
+      function showLoginStep(step) {
+        const stack = document.getElementById('loginRoleStack');
+        const fTk = document.getElementById('loginFormTk');
+        const fCoord = document.getElementById('loginFormCoordinator');
+        const fOff = document.getElementById('loginFormOfficer');
+        if (stack) stack.classList.toggle('hidden', step !== 'stack');
+        if (fTk) fTk.classList.toggle('hidden', step !== 'tk');
+        if (fCoord) fCoord.classList.toggle('hidden', step !== 'coordinator');
+        if (fOff) fOff.classList.toggle('hidden', step !== 'officer');
+      }
+
+      document.querySelectorAll('[data-login-pick]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          showLoginStep(btn.getAttribute('data-login-pick'));
+        });
+      });
+
+      document.querySelectorAll('[data-login-back]').forEach(btn => {
+        btn.addEventListener('click', () => showLoginStep('stack'));
+      });
+
+      document.querySelectorAll('.login-sample-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('loginTkCodeInput').value = btn.getAttribute('data-login-sample');
+        });
+      });
+
+      function populateLoginTkLocales() {
+        const city = document.getElementById('loginTkCitySelect').value;
+        const locSel = document.getElementById('loginTkLocaleSelect');
+        const list = LOCALES_SEED.filter(l => l.city === city);
+        locSel.innerHTML = list.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+      }
+      document.getElementById('loginTkCitySelect').addEventListener('change', populateLoginTkLocales);
+      populateLoginTkLocales();
+
+      document.getElementById('loginTkContinueBtn').addEventListener('click', () => {
+        const pickedLocaleId = Number(document.getElementById('loginTkLocaleSelect').value) || 1;
+        const found = LOCALES_SEED.find(l => l.id === pickedLocaleId) || LOCALES_SEED[0];
+        state.tkLocaleId = found.id;
+        state.gridLocaleId = found.id;
+        setRoleView('tk');
+        showToast(`Viewing ${found.city} — ${found.name}`);
+      });
+
+      document.getElementById('tkViewCitySelect').addEventListener('change', (e) => {
+        const city = e.target.value;
+        const firstInCity = LOCALES_SEED.find(l => l.city === city);
+        if (firstInCity) {
+          state.tkLocaleId = firstInCity.id;
+          state.gridLocaleId = firstInCity.id;
+          updateTopBreadcrumbs();
+          renderSidebarLocalesTree();
+          renderTkView();
+        }
+      });
+
+      document.getElementById('tkViewLocaleSelect').addEventListener('change', (e) => {
+        const locId = Number(e.target.value);
+        state.tkLocaleId = locId;
+        state.gridLocaleId = locId;
+        updateTopBreadcrumbs();
+        renderSidebarLocalesTree();
+        renderTkView();
+      });
+
+      document.getElementById('tkViewSearchMember').addEventListener('input', () => {
+        renderTkView();
+      });
+
+      document.getElementById('loginCoordContinueBtn').addEventListener('click', () => {
+        const code = document.getElementById('loginCoordCodeInput').value.trim().toUpperCase();
+        const pin = document.getElementById('loginCoordPinInput').value.trim();
+        const found = LOCALES_SEED.find(l => l.code === code);
+        if (!found) {
+          showToast('Invalid locale access code');
+          return;
+        }
+        if (pin !== found.pin) {
+          showToast('Incorrect Coordinator PIN (Demo: 1234)');
+          return;
+        }
+        state.coordLocaleId = found.id;
+        state.gridLocaleId = found.id;
+        state.coordUnlocked = true;
+        document.getElementById('coordLocaleInput').value = found.code;
+        document.getElementById('coordPinInput').value = pin;
+        setRoleView('coordinator');
+        showToast(`Unlocked Coordinator mode (${found.name})`);
+      });
+
+      document.getElementById('loginOfficerContinueBtn').addEventListener('click', () => {
+        setRoleView('officer');
+        setOfficerTab('grid');
+        showToast('Signed in as District Officer');
+      });
+
+      document.getElementById('topSwitchRoleBtn').addEventListener('click', () => {
+        showLoginStep('stack');
+        setRoleView('landing');
+      });
+
+      // Wire Supabase Live Backend Modal & REST RPC Bridge
+      const sbModal = document.getElementById('modalSupabaseConfig');
+      const sbDot = document.getElementById('supabaseStatusDot');
+      const sbLabel = document.getElementById('supabaseStatusLabel');
+
+      function syncSupabaseBadge() {
+        try {
+          const url = localStorage.getItem('lnatk_sb_url');
+          const key = localStorage.getItem('lnatk_sb_key');
+          if (url && key) {
+            sbDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+            sbLabel.textContent = 'Supabase Connected';
+            document.getElementById('sbUrlInput').value = url;
+            document.getElementById('sbAnonKeyInput').value = key;
+          } else {
+            sbDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
+            sbLabel.textContent = 'Backend & SQL';
+          }
+        } catch (e) {}
+      }
+      syncSupabaseBadge();
+
+      document.getElementById('openSupabaseModalBtn').addEventListener('click', () => {
+        sbModal.classList.remove('hidden');
+      });
+      document.getElementById('closeSupabaseModalBtn').addEventListener('click', () => {
+        sbModal.classList.add('hidden');
+      });
+      document.getElementById('saveSupabaseConfigBtn').addEventListener('click', () => {
+        const url = document.getElementById('sbUrlInput').value.trim().replace(/\/$/, '');
+        const key = document.getElementById('sbAnonKeyInput').value.trim();
+        if (!url || !key) {
+          showToast('Enter both Supabase URL and Anon Key');
+          return;
+        }
+        try {
+          localStorage.setItem('lnatk_sb_url', url);
+          localStorage.setItem('lnatk_sb_key', key);
+        } catch (e) {}
+        syncSupabaseBadge();
+        sbModal.classList.add('hidden');
+        showToast('Connected to live Supabase PostgreSQL backend');
+      });
+      document.getElementById('disconnectSupabaseBtn').addEventListener('click', () => {
+        try {
+          localStorage.removeItem('lnatk_sb_url');
+          localStorage.removeItem('lnatk_sb_key');
+        } catch (e) {}
+        document.getElementById('sbUrlInput').value = '';
+        document.getElementById('sbAnonKeyInput').value = '';
+        syncSupabaseBadge();
+        sbModal.classList.add('hidden');
+        showToast('Switched to built-in local database');
+      });
+
+      // Start on the centered Log-In screen matching the user's sketch!
+      showLoginStep('stack');
+      setRoleView('landing');
+    });
+  </script>
+</body>
+</html>
