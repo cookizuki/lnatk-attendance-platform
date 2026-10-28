@@ -1,6 +1,6 @@
 import { supabase } from './supabaseApi';
 import {
-  AttendanceLogItem, AttendanceStatus, LocaleItem, MemberItem, MonthlyReport, SessionItem,
+  AttendanceLogItem, AttendanceStatus, EventItem, LocaleItem, MemberItem, MonthlyReport, SessionItem,
 } from '../types/lnatk';
 
 export interface RawSession {
@@ -97,4 +97,51 @@ export function formatReports(rows: MonthlyReport[]): MonthlyReport[] {
     ...r,
     submittedAt: new Date(r.submittedAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }),
   }));
+}
+
+// ---- Upcoming events -------------------------------------------------------
+interface EventRow {
+  id: string; title: string; event_date: string; end_date: string | null;
+  start_time: string | null; location: string | null; details: string | null;
+}
+const mapEvents = (rows: EventRow[]): EventItem[] =>
+  rows.map((r) => ({
+    id: r.id, title: r.title, date: r.event_date, endDate: r.end_date,
+    time: r.start_time ? r.start_time.slice(0, 5) : null,
+    location: r.location ?? '', details: r.details ?? '',
+  }));
+
+/** Public: only events that haven't finished yet. */
+export async function fetchUpcomingEvents(): Promise<EventItem[]> {
+  const { data, error } = await supabase.rpc('get_upcoming_events');
+  if (error) throw new Error(error.message);
+  return mapEvents((data ?? []) as EventRow[]);
+}
+
+/** Officers: everything, including past events. */
+export async function officerFetchEvents(): Promise<EventItem[]> {
+  const { data, error } = await supabase.from('events').select('*').order('event_date', { ascending: false });
+  if (error) throw new Error(error.message);
+  return mapEvents((data ?? []) as EventRow[]);
+}
+
+export async function officerSaveEvent(ev: Omit<EventItem, 'id'> & { id?: string }): Promise<string> {
+  const row = {
+    title: ev.title, event_date: ev.date, end_date: ev.endDate || null, start_time: ev.time || null,
+    location: ev.location || null, details: ev.details || null,
+  };
+  if (ev.id) {
+    const { error } = await supabase.from('events').update(row).eq('id', ev.id);
+    if (error) throw new Error(error.message);
+    return ev.id;
+  }
+  const { data: u } = await supabase.auth.getUser();
+  const { data, error } = await supabase.from('events').insert({ ...row, created_by: u.user?.id ?? null }).select('id').single();
+  if (error) throw new Error(error.message);
+  return data.id as string;
+}
+
+export async function officerDeleteEvent(id: string) {
+  const { error } = await supabase.from('events').delete().eq('id', id);
+  if (error) throw new Error(error.message);
 }

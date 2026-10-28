@@ -1,6 +1,6 @@
 export type CityName = 'Santa Rosa' | 'Biñan' | 'San Pedro';
 export type PortalRole = 'landing' | 'tk' | 'coordinator' | 'officer';
-export type OfficerTab = 'grid' | 'dashboard' | 'inbox' | 'admin' | 'reports' | 'events';
+export type OfficerTab = 'grid' | 'dashboard' | 'inbox' | 'admin' | 'reports' | 'events' | 'upcoming';
 export type AttendanceStatus = 'D' | 'S' | 'A' | 'P' | 'N' | 'K' | 'NP';
 
 export const STATUS_FULL_LABELS: Record<AttendanceStatus, string> = {
@@ -98,4 +98,14 @@ export interface MonthlyReport {
   other: string;
   submittedAt: string;
   reviewed: boolean;
+}
+
+export interface EventItem {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  endDate: string | null;
+  time: string | null; // HH:MM
+  location: string;
+  details: string;
 }

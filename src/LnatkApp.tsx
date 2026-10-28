@@ -11,6 +11,7 @@ import {
   MemberItem,
   AttendanceLogItem,
   EditHistoryItem,
+  EventItem,
   MonthlyReport,
 } from './types/lnatk';
 import { INITIAL_LOCALES, INITIAL_SESSIONS, buildSeedData } from './data/seedData';
@@ -44,11 +45,17 @@ import {
   mapLocales,
   formatReports,
   RawSheet,
+  fetchUpcomingEvents,
+  officerFetchEvents,
+  officerSaveEvent,
+  officerDeleteEvent,
 } from './lib/dataLoader';
 import CoordinatorReportForm from './components/CoordinatorReportForm';
 import OfficerReports from './components/OfficerReports';
 import MemberManager from './components/MemberManager';
 import SpbbManager from './components/SpbbManager';
+import UpcomingEvents from './components/UpcomingEvents';
+import EventsManager from './components/EventsManager';
 import { downloadExcel, printPdf, LocaleSummaryRow, MemberStatusRow } from './lib/exportReport';
 
 const currentMonthManila = () => new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 7);
@@ -62,6 +69,7 @@ const OFFICER_TAB_LABELS: Record<string, string> = {
   reports: 'Coordinator Reports',
   admin: 'Members',
   events: 'SPBB Days',
+  upcoming: 'Upcoming Events',
 };
 
 
@@ -101,6 +109,7 @@ export default function LnatkApp() {
   const [dataLoading, setDataLoading] = useState<boolean>(isSupabaseConfigured);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [weekView, setWeekView] = useState<number | 'all'>('all');
   const weekViewInit = React.useRef('');
   const [editHistory, setEditHistory] = useState<EditHistoryItem[]>([
@@ -205,6 +214,7 @@ export default function LnatkApp() {
     if (!isSupabaseConfigured) return;
     (async () => {
       try {
+        fetchUpcomingEvents().then(setEvents).catch(() => undefined);
         await ensureSessions();
         const rows = await fetchActiveLocales();
         setLocales(
@@ -250,6 +260,7 @@ export default function LnatkApp() {
         triggerToast(err instanceof Error ? err.message : 'Could not load officer data');
       }
     };
+    officerFetchEvents().then((ev) => { if (!cancelled) setEvents(ev); }).catch(() => undefined);
     load();
     const ch = subscribeToAttendanceChanges(() => {
       clearTimeout(timer);
@@ -534,6 +545,33 @@ export default function LnatkApp() {
     }
   };
   const todayStr = () => new Date().toISOString().slice(0, 10);
+
+  const handleSaveEvent = async (ev: Omit<EventItem, 'id'> & { id?: string }): Promise<boolean> => {
+    let id = ev.id ?? `ev-${Date.now()}`;
+    if (isSupabaseConfigured) {
+      try {
+        id = await officerSaveEvent(ev);
+      } catch (err) {
+        triggerToast(err instanceof Error ? err.message : 'Could not save the event');
+        return false;
+      }
+    }
+    setEvents((prev) => [{ ...ev, id }, ...prev.filter((e) => e.id !== id)]);
+    triggerToast(ev.id ? 'Event updated' : 'Event added');
+    return true;
+  };
+  const handleDeleteEvent = async (id: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        await officerDeleteEvent(id);
+      } catch (err) {
+        triggerToast(err instanceof Error ? err.message : 'Could not delete the event');
+        return;
+      }
+    }
+    setEvents((prev) => prev.filter((e) => e.id !== id));
+    triggerToast('Event deleted');
+  };
 
   const handleCreateSpbb = async (eventName: string, dates: string[]): Promise<boolean> => {
     if (!isSupabaseConfigured) {
@@ -850,6 +888,7 @@ export default function LnatkApp() {
                   { id: 'grid', label: 'Duty Sheet' },
                   { id: 'dashboard', label: 'Overall Status' },
                   { id: 'reports', label: 'Coordinator Reports' },
+                  { id: 'upcoming', label: 'Upcoming Events' },
                   { id: 'admin', label: 'Members' },
                   { id: 'events', label: 'SPBB Days' },
                   { id: 'inbox', label: 'Live Venue Board (Per Locale)' },
@@ -985,7 +1024,8 @@ export default function LnatkApp() {
           {/* VIEW 1: CENTERED LOG-IN SCREEN */}
           {role === 'landing' && (
             <section className="min-h-[calc(100vh-6.5rem)] flex flex-col items-center justify-center">
-              <div className="w-full max-w-sm space-y-5">
+              <div className="w-full max-w-sm md:max-w-4xl md:grid md:grid-cols-2 md:gap-10 md:items-start space-y-8 md:space-y-0">
+              <div className="space-y-5">
                 <div className="text-center space-y-1.5">
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-brand-800 text-white font-mono font-bold text-sm">
                     TK
@@ -1189,6 +1229,8 @@ export default function LnatkApp() {
                     </div>
                   )}
                 </div>
+              </div>
+              <UpcomingEvents events={events} />
               </div>
             </section>
           )}
@@ -1515,6 +1557,10 @@ export default function LnatkApp() {
               monthLabel={reportMonthLabel}
               onReview={handleReview}
             />
+          )}
+
+          {role === 'officer' && officerTab === 'upcoming' && (
+            <EventsManager events={events} onSave={handleSaveEvent} onDelete={handleDeleteEvent} />
           )}
 
           {role === 'officer' && officerTab === 'events' && (
