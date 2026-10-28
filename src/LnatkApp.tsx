@@ -162,6 +162,11 @@ export default function LnatkApp() {
       new Date(`${d}T00:00:00Z`).toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).toUpperCase();
     return `WEEK ${w} (${f(ds[0])} – ${f(ds[ds.length - 1])})`;
   };
+  const liveTg = useMemo(
+    () => sessions.find((s) => s.type === 'TG' && s.statusWindow === 'live'),
+    [sessions]
+  );
+
   const currentWeekNum = useMemo(() => {
     const now = new Date(Date.now() + 8 * 3600 * 1000);
     now.setUTCDate(now.getUTCDate() - ((now.getUTCDay() + 6) % 7));
@@ -268,9 +273,9 @@ export default function LnatkApp() {
   }, [role, coordTab, selectedLocaleId, reportMonth]);
 
   useEffect(() => {
-    if (sessions.length && !sessions.some((s) => s.id === coordSessionId)) setCoordSessionId(liveTgId);
+    if (liveTg) setCoordSessionId(liveTg.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessions, liveTgId]);
+  }, [liveTg]);
 
   const getWeekBestStatus = (memberId: string, weekNum: number): string => {
     const rank: Record<string, number> = { P: 5, S: 4, D: 3, A: 2, N: 1, '-': 0 };
@@ -393,6 +398,10 @@ export default function LnatkApp() {
   };
 
   const handleCoordinatorBatchSubmit = async () => {
+    if (!liveTg) {
+      triggerToast('The TG roster is only open while the TG is live on Saturday.');
+      return;
+    }
     const keys = Object.keys(coordDraft);
     if (keys.length === 0) {
       triggerToast('Tap S / P / D / A on at least one member first.');
@@ -426,7 +435,10 @@ export default function LnatkApp() {
         entries: keys.map((mId) => ({ member_id: mId, status: coordDraft[mId] })),
       });
     } catch (err) {
-      if (isSupabaseConfigured) triggerToast(err instanceof Error ? err.message : 'Submission rejected');
+      if (isSupabaseConfigured) {
+        triggerToast(err instanceof Error ? err.message : 'Submission rejected');
+        setReloadTick((n) => n + 1);
+      }
     }
   };
 
@@ -632,7 +644,7 @@ export default function LnatkApp() {
               <span>{legendChip(PRACTICE_TONE.NP, 'N')} No Practice</span>
               <span>{legendChip(PRACTICE_TONE.N, 'N')} No Attendance</span>
             </div>
-            <p className="text-zinc-500">A green dot on a column means it is open for entries. Closed columns are locked; ask an officer to change them.</p>
+            <p className="text-zinc-500">Each column locks when its entry window ends. The TG batch roster (coordinators) only opens while TG is live on Saturday. A green dot on a column means it is open for entries. Closed columns are locked; ask an officer to change them.</p>
           </div>
         </details>
       </div>
@@ -818,10 +830,12 @@ export default function LnatkApp() {
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
-                aria-label="Collapse sidebar"
-                className="px-2.5 py-1 rounded-lg border border-zinc-300 dark:border-obsidian-700 text-xs font-medium"
+                aria-label="Hide menu"
+                title="Hide menu"
+                className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-200/70 dark:hover:bg-obsidian-800"
               >
-                ✕
+                <span className="md:hidden"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></span>
+                <span className="hidden md:inline"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="m16 9-3 3 3 3" /></svg></span>
               </button>
             </div>
 
@@ -907,10 +921,12 @@ export default function LnatkApp() {
             {role === 'officer' && (
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                aria-label="Toggle sidebar"
-                className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-obsidian-800 text-sm"
+                aria-label={sidebarOpen ? 'Hide menu' : 'Show menu'}
+                aria-expanded={sidebarOpen}
+                title="Show menu"
+                className={`p-2 rounded-lg border border-zinc-200 dark:border-obsidian-800 hover:bg-zinc-100 dark:hover:bg-obsidian-900 ${sidebarOpen ? 'md:hidden' : ''}`}
               >
-                ☰
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="m14 9 3 3-3 3" /></svg>
               </button>
             )}
             {role === 'landing' ? (
@@ -1271,8 +1287,8 @@ export default function LnatkApp() {
             />
           )}
           {role === 'coordinator' && coordTab === 'duty' && (
-            <section className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-              <div className="xl:col-span-5 border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-5 space-y-4">
+            <section className="space-y-4">
+              <div className="max-w-xl mx-auto w-full border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 sm:p-5 space-y-4">
                 <div className="border-b border-zinc-100 dark:border-obsidian-800 pb-3">
                   <h2 className="text-sm font-semibold">Batch TG Duty Roster</h2>
                   <p className="text-xs text-zinc-500">
@@ -1280,23 +1296,25 @@ export default function LnatkApp() {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between gap-2">
-                  <label className="text-xs text-zinc-500">Target Session Column:</label>
-                  <select
-                    value={coordSessionId}
-                    onChange={(e) => setCoordSessionId(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-semibold"
-                  >
-                    {sessions
-                      .filter((s) => s.statusWindow !== 'closed' && s.type !== 'Practice')
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.label} ({s.date})
-                        </option>
-                      ))}
-                  </select>
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 dark:border-obsidian-800 px-3.5 py-2.5 text-xs">
+                  <span className="text-zinc-500">Session</span>
+                  {liveTg ? (
+                    <span className="font-semibold flex items-center gap-1.5">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {liveTg.label} · {liveTg.date} · Live now
+                    </span>
+                  ) : (
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">Not live</span>
+                  )}
                 </div>
+                {!liveTg && (
+                  <p className="text-xs text-zinc-500">
+                    This roster is only open while the Saturday TG is live. Outside of that, use the duty sheet below or ask an officer.
+                  </p>
+                )}
 
+                {liveTg && (
+                  <>
                 <div className="divide-y divide-zinc-200 dark:divide-obsidian-800 rounded-lg border border-zinc-200 dark:border-obsidian-800 max-h-96 overflow-y-auto">
                   {members
                     .filter((m) => m.localeId === currentLocale.id && !m.leftAt)
@@ -1331,9 +1349,11 @@ export default function LnatkApp() {
                 >
                   Submit Coordinator Batch
                 </button>
+                  </>
+                )}
               </div>
 
-              <div className="xl:col-span-7 border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden">
+              <div className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden">
                 <div className="px-4 py-3 bg-zinc-50 dark:bg-obsidian-900 border-b border-zinc-200 dark:border-obsidian-800 flex items-center justify-between text-xs">
                   <span className="font-semibold">
                     {currentLocale.city} — Locale of {currentLocale.name} Regular Duty Sheet
