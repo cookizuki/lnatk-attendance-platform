@@ -54,14 +54,15 @@ import {
   officerSaveEvent,
   officerDeleteEvent,
 } from './lib/dataLoader';
-import CoordinatorReportForm from './components/CoordinatorReportForm';
-import OfficerReports from './components/OfficerReports';
-import MemberManager from './components/MemberManager';
-import SpbbManager from './components/SpbbManager';
 import UpcomingEvents from './components/UpcomingEvents';
-import EventsManager from './components/EventsManager';
-import TkOverview from './components/TkOverview';
-import { downloadExcel, printPdf, LocaleSummaryRow, MemberStatusRow } from './lib/exportReport';
+import type { LocaleSummaryRow, MemberStatusRow } from './lib/exportReport';
+
+const CoordinatorReportForm = React.lazy(() => import('./components/CoordinatorReportForm'));
+const OfficerReports = React.lazy(() => import('./components/OfficerReports'));
+const MemberManager = React.lazy(() => import('./components/MemberManager'));
+const SpbbManager = React.lazy(() => import('./components/SpbbManager'));
+const EventsManager = React.lazy(() => import('./components/EventsManager'));
+const TkOverview = React.lazy(() => import('./components/TkOverview'));
 
 const currentMonthManila = () => new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 7);
 const PLACEHOLDER_LOCALE: LocaleItem = {
@@ -221,8 +222,7 @@ export default function LnatkApp() {
     (async () => {
       try {
         fetchUpcomingEvents().then(setEvents).catch(() => undefined);
-        await ensureSessions();
-        const rows = await fetchActiveLocales();
+        const [, rows] = await Promise.all([ensureSessions(), fetchActiveLocales()]);
         setLocales(
           rows.map((l) => ({
             id: l.locale_id, city: l.city_name, locale: l.locale_name,
@@ -508,13 +508,15 @@ export default function LnatkApp() {
         };
       });
     try {
+      const { downloadExcel } = await import('./lib/exportReport');
       await downloadExcel(reportMonthLabel, buildLocaleRows(), buildMemberRows(), rows);
     } catch {
       triggerToast('Could not create the Excel file.');
     }
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
+    const { printPdf } = await import('./lib/exportReport');
     if (!printPdf(reportMonthLabel, buildLocaleRows(), buildMemberRows())) {
       triggerToast('Allow pop-ups to download the PDF.');
     }
@@ -847,7 +849,7 @@ export default function LnatkApp() {
   const locSummary = computeLocaleSummary(currentLocale.id);
   const cityLocales = locales.filter((l) => l.city === selectedCity);
 
-  if (isSupabaseConfigured && (dataLoading || loadError || locales.length === 0)) {
+  if (isSupabaseConfigured && role !== 'landing' && (dataLoading || loadError || locales.length === 0)) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3 p-6 text-center bg-white dark:bg-obsidian-950 text-zinc-900 dark:text-zinc-100">
         <div className="font-bold tracking-widest text-sm">LNATK ATTENDANCE PLATFORM</div>
@@ -1045,6 +1047,7 @@ export default function LnatkApp() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-3 sm:p-6">
+          <React.Suspense fallback={<p className="text-xs text-zinc-500">Loading…</p>}>
           {/* VIEW 1: CENTERED LOG-IN SCREEN */}
           {role === 'landing' && (
             <section className="min-h-[calc(100vh-6.5rem)] flex flex-col items-center justify-center">
@@ -1055,7 +1058,7 @@ export default function LnatkApp() {
                     TK
                   </div>
                   <h1 className="text-xl font-bold tracking-widest uppercase">Log-In</h1>
-                  <p className="text-xs text-zinc-500">LNATK District Attendance Platform</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">LNATK District Attendance Platform</p>
                 </div>
 
                 <div className="rounded-[28px] border-2 border-zinc-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-900 shadow-2xl overflow-hidden">
@@ -1066,7 +1069,7 @@ export default function LnatkApp() {
                         className="w-full py-6 px-6 text-center hover:bg-brand-50/60 dark:hover:bg-brand-950/30 transition-colors"
                       >
                         <div className="text-lg font-semibold">Regular TK</div>
-                        <div className="text-[11px] text-zinc-400">
+                        <div className="text-[11px] text-zinc-600 dark:text-zinc-400">
                           Select your city & locale · View & edit locale table
                         </div>
                       </button>
@@ -1134,7 +1137,8 @@ export default function LnatkApp() {
                       </div>
                       <button
                         onClick={() => setRole('tk')}
-                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold"
+                        disabled={locales.length === 0}
+                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold disabled:opacity-60"
                       >
                         Enter Locale Table
                       </button>
@@ -1197,7 +1201,8 @@ export default function LnatkApp() {
                           setCoordTab('duty');
                           setRole('coordinator');
                         }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold"
+                        disabled={locales.length === 0}
+                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold "
                       >
                         Unlock Coordinator Account
                       </button>
@@ -1611,6 +1616,7 @@ export default function LnatkApp() {
               onUpdate={handleUpdateMembers}
             />
           )}
+          </React.Suspense>
         </main>
       </div>
 
