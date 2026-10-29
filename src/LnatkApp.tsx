@@ -1047,7 +1047,7 @@ export default function LnatkApp() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-3 sm:p-6">
-          <React.Suspense fallback={<p className="text-xs text-zinc-500">Loading…</p>}>
+          <React.Suspense fallback={<p className="text-xs text-zinc-600 dark:text-zinc-400">Loading…</p>}>
           {/* VIEW 1: CENTERED LOG-IN SCREEN */}
           {role === 'landing' && (
             <section className="min-h-[calc(100vh-6.5rem)] flex flex-col items-center justify-center">
@@ -1097,10 +1097,10 @@ export default function LnatkApp() {
                   {loginStep === 'tk' && (
                     <div className="p-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <button onClick={() => setLoginStep('stack')} className="text-xs text-zinc-400">
+                        <button onClick={() => setLoginStep('stack')} className="text-xs text-zinc-600 dark:text-zinc-400">
                           ← Back
                         </button>
-                        <span className="text-xs font-semibold uppercase text-brand-600">Regular TK</span>
+                        <span className="text-xs font-semibold uppercase text-brand-700 dark:text-brand-300">Regular TK</span>
                       </div>
                       <div className="space-y-3">
                         <div>
