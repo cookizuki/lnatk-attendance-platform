@@ -1,5 +1,6 @@
 import { supabase } from './supabaseApi';
 import {
+  TkCategory,
   AttendanceLogItem, AttendanceStatus, EventItem, LocaleItem, MemberItem, MonthlyReport, SessionItem,
 } from '../types/lnatk';
 
@@ -47,7 +48,7 @@ const mondayOf = (d: string) => {
 /** Adds week numbers, labels and the open/live/closed window the UI needs. */
 export function decorateSessions(raw: RawSession[], now = new Date()): SessionItem[] {
   const weeks = [...new Set(raw.map((s) => mondayOf(s.date)))].sort();
-  const rank: Record<string, number> = { PM: 1, WS: 2, Practice: 3, TG: 4, SPBB: 5 };
+  const rank: Record<string, number> = { PM: 1, CPMWS: 1, WS: 2, Practice: 3, TG: 4, SPBB: 5 };
   const sorted = [...raw].sort((a, b) => a.date.localeCompare(b.date) || (rank[a.type] ?? 9) - (rank[b.type] ?? 9));
   return sorted.map((s) => {
     const weekNum = weeks.indexOf(mondayOf(s.date)) + 1;
@@ -61,8 +62,12 @@ export function decorateSessions(raw: RawSession[], now = new Date()): SessionIt
     return {
       id: s.id,
       type: s.type,
-      label: isSpbb ? `${s.eventName ?? 'SPBB'} D${s.dayNumber ?? ''}` : `Week ${weekNum} ${s.type}`,
-      shortLabel: isSpbb ? `D${s.dayNumber ?? ''}` : s.type === 'Practice' ? 'PRAC' : s.type,
+      label: isSpbb
+        ? `${s.eventName ?? 'SPBB'} D${s.dayNumber ?? ''}`
+        : s.type === 'Practice' && s.eventName
+        ? `${s.eventName} Practice D${s.dayNumber ?? ''}`
+        : `Week ${weekNum} ${s.type}`,
+      shortLabel: isSpbb ? `SPBB D${s.dayNumber ?? ''}` : s.type === 'Practice' ? 'PRAC' : s.type,
       date: s.date,
       weekNum,
       code: null,
@@ -143,5 +148,30 @@ export async function officerSaveEvent(ev: Omit<EventItem, 'id'> & { id?: string
 
 export async function officerDeleteEvent(id: string) {
   const { error } = await supabase.from('events').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+// ---- Officer-only TK category / hold ---------------------------------------
+export interface MemberProfile { category: TkCategory; onHold: boolean; holdReason: string }
+
+export async function fetchMemberProfiles(): Promise<Record<string, MemberProfile>> {
+  const { data, error } = await supabase.rpc('officer_member_profiles');
+  if (error) throw new Error(error.message);
+  const out: Record<string, MemberProfile> = {};
+  ((data ?? []) as Array<MemberProfile & { id: string }>).forEach((r) => {
+    out[r.id] = { category: r.category, onHold: r.onHold, holdReason: r.holdReason };
+  });
+  return out;
+}
+
+export async function officerUpdateMembers(
+  ids: string[],
+  patch: { category?: TkCategory; onHold?: boolean; holdReason?: string }
+) {
+  const row: Record<string, unknown> = {};
+  if (patch.category !== undefined) row.category = patch.category;
+  if (patch.onHold !== undefined) row.on_hold = patch.onHold;
+  if (patch.holdReason !== undefined) row.hold_reason = patch.holdReason || null;
+  const { error } = await supabase.from('members').update(row).in('id', ids);
   if (error) throw new Error(error.message);
 }

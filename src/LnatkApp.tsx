@@ -5,6 +5,8 @@ import {
   OfficerTab,
   AttendanceStatus,
   statusLabel,
+  TK_CATEGORY_LABELS,
+  TkCategory,
   statusShort,
   LocaleItem,
   SessionItem,
@@ -47,6 +49,8 @@ import {
   RawSheet,
   fetchUpcomingEvents,
   officerFetchEvents,
+  fetchMemberProfiles,
+  officerUpdateMembers,
   officerSaveEvent,
   officerDeleteEvent,
 } from './lib/dataLoader';
@@ -56,6 +60,7 @@ import MemberManager from './components/MemberManager';
 import SpbbManager from './components/SpbbManager';
 import UpcomingEvents from './components/UpcomingEvents';
 import EventsManager from './components/EventsManager';
+import TkOverview from './components/TkOverview';
 import { downloadExcel, printPdf, LocaleSummaryRow, MemberStatusRow } from './lib/exportReport';
 
 const currentMonthManila = () => new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 7);
@@ -70,6 +75,7 @@ const OFFICER_TAB_LABELS: Record<string, string> = {
   admin: 'Members',
   events: 'SPBB Days',
   upcoming: 'Upcoming Events',
+  overview: 'TK Overview',
 };
 
 
@@ -172,7 +178,7 @@ export default function LnatkApp() {
     return `WEEK ${w} (${f(ds[0])} – ${f(ds[ds.length - 1])})`;
   };
   const liveTg = useMemo(
-    () => sessions.find((s) => s.type === 'TG' && s.statusWindow === 'live'),
+    () => sessions.find((s) => (s.type === 'TG' || s.type === 'SPBB') && s.statusWindow === 'live'),
     [sessions]
   );
 
@@ -193,7 +199,7 @@ export default function LnatkApp() {
   }, [reportMonth, weekNums, currentWeekNum]);
 
   const liveTgId = useMemo(() => {
-    const tgs = sessions.filter((s) => s.type === 'TG').sort((a, b) => a.date.localeCompare(b.date));
+    const tgs = sessions.filter((s) => s.type === 'TG' || s.type === 'SPBB').sort((a, b) => a.date.localeCompare(b.date));
     return (
       tgs.find((s) => s.statusWindow === 'live') ?? tgs.find((s) => s.statusWindow === 'open') ?? tgs[tgs.length - 1]
     )?.id ?? 'w4-tg';
@@ -251,10 +257,13 @@ export default function LnatkApp() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const load = async () => {
       try {
-        const d = await fetchOfficerMonth(reportMonth);
+        const [d, profiles] = await Promise.all([
+          fetchOfficerMonth(reportMonth),
+          fetchMemberProfiles().catch(() => ({} as Awaited<ReturnType<typeof fetchMemberProfiles>>)),
+        ]);
         if (cancelled) return;
         setLocales(mapLocales(d.locales));
-        applySheet(d, null);
+        applySheet({ ...d, members: d.members.map((m) => ({ ...m, ...(profiles[m.id] ?? {}) })) }, null);
         setReports(formatReports(d.reports));
       } catch (err) {
         triggerToast(err instanceof Error ? err.message : 'Could not load officer data');
@@ -410,7 +419,7 @@ export default function LnatkApp() {
 
   const handleCoordinatorBatchSubmit = async () => {
     if (!liveTg) {
-      triggerToast('The TG roster is only open while the TG is live on Saturday.');
+      triggerToast('The roster is only open while a TG or SPBB day is live.');
       return;
     }
     const keys = Object.keys(coordDraft);
@@ -471,6 +480,8 @@ export default function LnatkApp() {
             city: loc.city,
             locale: loc.name,
             name: m.fullName,
+            category: TK_CATEGORY_LABELS[m.category ?? 'locale'],
+            hold: m.onHold ? 'Yes' : '',
             weeks: weekNums.map((w) => r.weekMarkers[w]),
             weeksDuty: r.weeksDuty,
             status: r.bucket,
@@ -573,13 +584,13 @@ export default function LnatkApp() {
     triggerToast('Event deleted');
   };
 
-  const handleCreateSpbb = async (eventName: string, dates: string[]): Promise<boolean> => {
+  const handleCreateSpbb = async (eventName: string, dates: string[], liveStart: string, liveEnd: string): Promise<boolean> => {
     if (!isSupabaseConfigured) {
       triggerToast('Connect Supabase to create SPBB days.');
       return false;
     }
     try {
-      await officerCreateSpbbEvent(eventName, dates);
+      await officerCreateSpbbEvent(eventName, dates, liveStart, liveEnd);
     } catch (err) {
       triggerToast(err instanceof Error ? err.message : 'Could not create the event');
       return false;
@@ -597,6 +608,18 @@ export default function LnatkApp() {
     } catch (err) {
       triggerToast(err instanceof Error ? err.message : 'Could not delete the event');
     }
+  };
+
+  const handleUpdateMembers = async (
+    ids: string[],
+    patch: { category?: TkCategory; onHold?: boolean; holdReason?: string }
+  ) => {
+    if (!(await persist(() => officerUpdateMembers(ids, patch)))) return;
+    setMembers((prev) =>
+      prev.map((m) => (ids.includes(m.id) ? { ...m, ...patch } : m))
+    );
+    if (patch.category !== undefined) triggerToast(ids.length === 1 ? 'Category updated' : `${ids.length} categories updated`);
+    else if (patch.onHold !== undefined) triggerToast(patch.onHold ? 'Put on hold' : 'Hold released');
   };
 
   const handleAddMember = async (name: string) => {
@@ -682,7 +705,7 @@ export default function LnatkApp() {
               <span>{legendChip(PRACTICE_TONE.NP, 'N')} No Practice</span>
               <span>{legendChip(PRACTICE_TONE.N, 'N')} No Attendance</span>
             </div>
-            <p className="text-zinc-500">Each column locks when its entry window ends. The TG batch roster (coordinators) only opens while TG is live on Saturday. A green dot on a column means it is open for entries. Closed columns are locked; ask an officer to change them.</p>
+            <p className="text-zinc-500">Each column locks when its entry window ends. The batch roster (coordinators) only opens while TG or an SPBB day is live. A green dot on a column means it is open for entries. Closed columns are locked; ask an officer to change them.</p>
           </div>
         </details>
       </div>
@@ -887,6 +910,7 @@ export default function LnatkApp() {
                 {[
                   { id: 'grid', label: 'Duty Sheet' },
                   { id: 'dashboard', label: 'Overall Status' },
+                  { id: 'overview', label: 'TK Overview' },
                   { id: 'reports', label: 'Coordinator Reports' },
                   { id: 'upcoming', label: 'Upcoming Events' },
                   { id: 'admin', label: 'Members' },
@@ -1332,9 +1356,9 @@ export default function LnatkApp() {
             <section className="space-y-4">
               <div className="max-w-xl mx-auto w-full border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 sm:p-5 space-y-4">
                 <div className="border-b border-zinc-100 dark:border-obsidian-800 pb-3">
-                  <h2 className="text-sm font-semibold">Batch TG Duty Roster</h2>
+                  <h2 className="text-sm font-semibold">Batch {liveTg?.type === 'SPBB' ? 'SPBB' : 'TG'} Duty Roster</h2>
                   <p className="text-xs text-zinc-500">
-                    Mark multiple members for TG at once and submit to the locale table.
+                    Mark multiple members for the live {liveTg?.type === 'SPBB' ? 'SPBB day' : 'TG'} at once and submit to the locale table.
                   </p>
                 </div>
 
@@ -1351,7 +1375,7 @@ export default function LnatkApp() {
                 </div>
                 {!liveTg && (
                   <p className="text-xs text-zinc-500">
-                    This roster is only open while the Saturday TG is live. Outside of that, use the duty sheet below or ask an officer.
+                    This roster is only open while the TG or an SPBB day is live. Outside of that, use the duty sheet below or ask an officer.
                   </p>
                 )}
 
@@ -1366,7 +1390,7 @@ export default function LnatkApp() {
                         <div key={m.id} className="px-3.5 py-2.5 flex items-center justify-between text-xs">
                           <span className="font-medium">{m.fullName}</span>
                           <div className="flex items-center gap-1">
-                            {(['S', 'P', 'D', 'A'] as AttendanceStatus[]).map((st) => (
+                            {(['S', 'P', 'D', 'A'] as AttendanceStatus[]).filter((st) => liveTg?.allowed.includes(st)).map((st) => (
                               <button
                                 key={st}
                                 onClick={() => setCoordDraft((prev) => ({ ...prev, [m.id]: st }))}
@@ -1559,6 +1583,10 @@ export default function LnatkApp() {
             />
           )}
 
+          {role === 'officer' && officerTab === 'overview' && (
+            <TkOverview members={members} locales={locales} rollup={computeMemberRollup} monthLabel={reportMonthLabel} />
+          )}
+
           {role === 'officer' && officerTab === 'upcoming' && (
             <EventsManager events={events} onSave={handleSaveEvent} onDelete={handleDeleteEvent} />
           )}
@@ -1580,6 +1608,7 @@ export default function LnatkApp() {
               onRename={handleRenameMember}
               onRemove={(id) => handleSetLeft(id, todayStr())}
               onRestore={(id) => handleSetLeft(id, null)}
+              onUpdate={handleUpdateMembers}
             />
           )}
         </main>

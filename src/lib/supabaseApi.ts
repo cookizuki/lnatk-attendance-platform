@@ -338,8 +338,10 @@ export async function officerSetMemberLeft(memberId: string, leftAt: string | nu
   if (error) throw new Error(error.message);
 }
 
-export async function officerCreateSpbbEvent(eventName: string, dates: string[]) {
-  const { error } = await supabase.rpc('create_spbb_event', { p_event_name: eventName, p_dates: dates });
+export async function officerCreateSpbbEvent(eventName: string, dates: string[], liveStart: string, liveEnd: string) {
+  const { error } = await supabase.rpc('create_spbb_event', {
+    p_event_name: eventName, p_dates: dates, p_live_start: liveStart, p_live_end: liveEnd,
+  });
   if (error) throw new Error(error.message);
 }
 

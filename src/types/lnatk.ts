@@ -1,6 +1,6 @@
 export type CityName = 'Santa Rosa' | 'Biñan' | 'San Pedro';
 export type PortalRole = 'landing' | 'tk' | 'coordinator' | 'officer';
-export type OfficerTab = 'grid' | 'dashboard' | 'inbox' | 'admin' | 'reports' | 'events' | 'upcoming';
+export type OfficerTab = 'grid' | 'dashboard' | 'inbox' | 'admin' | 'reports' | 'events' | 'upcoming' | 'overview';
 export type AttendanceStatus = 'D' | 'S' | 'A' | 'P' | 'N' | 'K' | 'NP';
 
 export const STATUS_FULL_LABELS: Record<AttendanceStatus, string> = {
@@ -25,6 +25,13 @@ export const statusLabel = (st: AttendanceStatus, sessionType: string): string =
 /** NP (No Practice) is shown as "N" in cells, in its own colour. */
 export const statusShort = (st: AttendanceStatus): string => (st === 'NP' ? 'N' : st);
 
+export type TkCategory = 'district' | 'locale' | 'trainee';
+export const TK_CATEGORY_LABELS: Record<TkCategory, string> = {
+  district: 'District/City TK',
+  locale: 'Locale TK',
+  trainee: 'Trainee',
+};
+
 export interface LocaleItem {
   id: number;
   city: CityName;
@@ -39,7 +46,7 @@ export interface LocaleItem {
 
 export interface SessionItem {
   id: string;
-  type: 'PM' | 'WS' | 'TG' | 'SPBB' | 'Practice';
+  type: 'PM' | 'WS' | 'CPMWS' | 'TG' | 'SPBB' | 'Practice';
   label: string;
   shortLabel: string;
   date: string;
@@ -56,6 +63,10 @@ export interface MemberItem {
   fullName: string;
   joinedAt: string;
   leftAt: string | null;
+  // Officer-only fields (never sent to Regular TK / Coordinator screens)
+  category?: TkCategory;
+  onHold?: boolean;
+  holdReason?: string;
 }
 
 export interface AttendanceLogItem {

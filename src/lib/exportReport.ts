@@ -1,5 +1,5 @@
 export interface LocaleSummaryRow { city: string; locale: string; duty34: number; duty12: number; noDuty: number; total: number }
-export interface MemberStatusRow { city: string; locale: string; name: string; weeks: string[]; weeksDuty: number; status: string }
+export interface MemberStatusRow { city: string; locale: string; name: string; category: string; hold: string; weeks: string[]; weeksDuty: number; status: string }
 export interface ReportExportRow {
   city: string; locale: string; month: string; position: string; coordinator: string;
   tkConcerns: string; general: string; actions: string; other: string; submittedAt: string;
@@ -33,7 +33,8 @@ export async function downloadExcel(monthLabel: string, locales: LocaleSummaryRo
 
   sheet('Per Member Status', [
     { header: 'City', key: 'city', width: 14 }, { header: 'Locale', key: 'locale', width: 22 },
-    { header: 'Member', key: 'name', width: 30 }, { header: 'Week 1', key: 'w1', width: 9 },
+    { header: 'Member', key: 'name', width: 30 }, { header: 'Category', key: 'category', width: 18 },
+    { header: 'Hold', key: 'hold', width: 8 }, { header: 'Week 1', key: 'w1', width: 9 },
     { header: 'Week 2', key: 'w2', width: 9 }, { header: 'Week 3', key: 'w3', width: 9 },
     { header: 'Week 4', key: 'w4', width: 9 }, { header: 'Week 5', key: 'w5', width: 9 }, { header: 'Weeks Duty', key: 'weeksDuty', width: 12 },
     { header: 'Status', key: 'status', width: 18 },
@@ -60,14 +61,14 @@ export function printPdf(monthLabel: string, locales: LocaleSummaryRow[], member
   if (!w) return false;
   const lr = locales.map((r) => `<tr><td>${esc(r.city)}</td><td>${esc(r.locale)}</td><td>${r.duty34}</td><td>${r.duty12}</td><td>${r.noDuty}</td><td>${r.total}</td></tr>`).join('');
   const wc = Math.max(4, ...members.map((m) => m.weeks.length));
-  const mr = members.map((r) => `<tr><td>${esc(r.locale)}</td><td>${esc(r.name)}</td>${Array.from({ length: wc }, (_, i) => `<td>${esc(r.weeks[i] ?? '')}</td>`).join('')}<td>${r.weeksDuty}</td><td>${esc(r.status)}</td></tr>`).join('');
+  const mr = members.map((r) => `<tr><td>${esc(r.locale)}</td><td>${esc(r.name)}</td><td>${esc(r.category)}</td><td>${esc(r.hold)}</td>${Array.from({ length: wc }, (_, i) => `<td>${esc(r.weeks[i] ?? '')}</td>`).join('')}<td>${r.weeksDuty}</td><td>${esc(r.status)}</td></tr>`).join('');
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>LNATK Status ${esc(monthLabel)}</title>
 <style>body{font:12px Arial,sans-serif;margin:24px}h1{font-size:18px}h2{font-size:14px;margin-top:24px}
 table{border-collapse:collapse;width:100%}th,td{border:1px solid #999;padding:4px 6px;text-align:left}th{background:#eee}
 @media print{h2{break-after:avoid}tr{break-inside:avoid}}</style></head><body>
 <h1>LNATK Overall Status — ${esc(monthLabel)}</h1>
 <h2>Locale Summary</h2><table><tr><th>City</th><th>Locale</th><th>3-4 Weeks</th><th>1-2 Weeks</th><th>No Duty</th><th>Total</th></tr>${lr}</table>
-<h2>Per Member Status</h2><table><tr><th>Locale</th><th>Member</th>${Array.from({ length: wc }, (_, i) => `<th>W${i + 1}</th>`).join('')}<th>Weeks Duty</th><th>Status</th></tr>${mr}</table>
+<h2>Per Member Status</h2><table><tr><th>Locale</th><th>Member</th><th>Category</th><th>Hold</th>${Array.from({ length: wc }, (_, i) => `<th>W${i + 1}</th>`).join('')}<th>Weeks Duty</th><th>Status</th></tr>${mr}</table>
 <script>window.onload=function(){window.print()}</script></body></html>`);
   w.document.close();
   return true;

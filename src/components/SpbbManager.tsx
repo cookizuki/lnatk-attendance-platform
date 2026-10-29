@@ -4,7 +4,7 @@ import { SessionItem } from '../types/lnatk';
 interface Props {
   sessions: SessionItem[];
   monthLabel: string;
-  onCreate: (eventName: string, dates: string[]) => Promise<boolean>;
+  onCreate: (eventName: string, dates: string[], liveStart: string, liveEnd: string) => Promise<boolean>;
   onDelete: (eventName: string) => void;
 }
 
@@ -14,6 +14,8 @@ const input =
 export default function SpbbManager({ sessions, monthLabel, onCreate, onDelete }: Props) {
   const [name, setName] = useState('');
   const [dates, setDates] = useState<string[]>(['', '', '']);
+  const [liveStart, setLiveStart] = useState('14:30');
+  const [liveEnd, setLiveEnd] = useState('15:30');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -34,7 +36,8 @@ export default function SpbbManager({ sessions, monthLabel, onCreate, onDelete }
       return setError('Fill the days in order (D1, then D2, then D3).');
     setError('');
     setBusy(true);
-    const ok = await onCreate(name.trim(), filled);
+    if (liveEnd <= liveStart) return setError('The live roster must close after it opens.');
+    const ok = await onCreate(name.trim(), filled, liveStart, liveEnd);
     setBusy(false);
     if (ok) { setName(''); setDates(['', '', '']); }
   };
@@ -44,7 +47,7 @@ export default function SpbbManager({ sessions, monthLabel, onCreate, onDelete }
       <div className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 space-y-3">
         <h3 className="text-sm font-semibold">Create SPBB days</h3>
         <p className="text-[11px] text-zinc-500">
-          Each day becomes a column (D1, D2, D3) in the week it falls on, with D / A / S / N choices. Entries close at the end of that week's Tuesday.
+          That week's columns become <strong>CPMWS | Practice | SPBB D1 | Practice | SPBB D2 | Practice | SPBB D3</strong>. The week's regular PM, WS and TG are replaced, so create the event before the week starts. All days must be in the same Monday to Sunday week. Coordinators get the live roster for each SPBB day during its live time. Entries close at the end of that week's Tuesday.
         </p>
         <input className={`${input} w-full`} placeholder="Event name, e.g. SPBB Q4 2026" value={name} onChange={(e) => setName(e.target.value)} />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -55,6 +58,14 @@ export default function SpbbManager({ sessions, monthLabel, onCreate, onDelete }
                 onChange={(e) => setDates((p) => p.map((x, idx) => (idx === i ? e.target.value : x)))} />
             </label>
           ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-[11px] font-semibold text-zinc-500">Live roster opens
+            <input type="time" className={`${input} w-full mt-1`} value={liveStart} onChange={(e) => setLiveStart(e.target.value)} />
+          </label>
+          <label className="text-[11px] font-semibold text-zinc-500">Live roster closes
+            <input type="time" className={`${input} w-full mt-1`} value={liveEnd} onChange={(e) => setLiveEnd(e.target.value)} />
+          </label>
         </div>
         {error && <p className="text-xs text-rose-500">{error}</p>}
         <button onClick={submit} disabled={busy}
