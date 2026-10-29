@@ -54,15 +54,24 @@ import {
   officerSaveEvent,
   officerDeleteEvent,
 } from './lib/dataLoader';
+import CoordinatorReportForm from './components/CoordinatorReportForm';
+import OfficerReports from './components/OfficerReports';
+import MemberManager from './components/MemberManager';
+import SpbbManager from './components/SpbbManager';
 import UpcomingEvents from './components/UpcomingEvents';
-import type { LocaleSummaryRow, MemberStatusRow } from './lib/exportReport';
+import EventsManager from './components/EventsManager';
+import TkOverview from './components/TkOverview';
+import { downloadExcel, printPdf, LocaleSummaryRow, MemberStatusRow } from './lib/exportReport';
 
-const CoordinatorReportForm = React.lazy(() => import('./components/CoordinatorReportForm'));
-const OfficerReports = React.lazy(() => import('./components/OfficerReports'));
-const MemberManager = React.lazy(() => import('./components/MemberManager'));
-const SpbbManager = React.lazy(() => import('./components/SpbbManager'));
-const EventsManager = React.lazy(() => import('./components/EventsManager'));
-const TkOverview = React.lazy(() => import('./components/TkOverview'));
+/** "Jero Belgica" -> "Belgica, Jero". Names already written "Surname, First" are kept as typed. */
+const surnameFirst = (name: string): string => {
+  const t = name.trim();
+  if (t.includes(',')) return t;
+  const parts = t.split(/\s+/);
+  if (parts.length < 2) return t;
+  const last = parts.pop() as string;
+  return `${last}, ${parts.join(' ')}`;
+};
 
 const currentMonthManila = () => new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 7);
 const PLACEHOLDER_LOCALE: LocaleItem = {
@@ -118,6 +127,7 @@ export default function LnatkApp() {
   const [reloadTick, setReloadTick] = useState(0);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [weekView, setWeekView] = useState<number | 'all'>('all');
+  const [fullNames, setFullNames] = useState(false);
   const weekViewInit = React.useRef('');
   const [editHistory, setEditHistory] = useState<EditHistoryItem[]>([
     {
@@ -222,7 +232,8 @@ export default function LnatkApp() {
     (async () => {
       try {
         fetchUpcomingEvents().then(setEvents).catch(() => undefined);
-        const [, rows] = await Promise.all([ensureSessions(), fetchActiveLocales()]);
+        await ensureSessions();
+        const rows = await fetchActiveLocales();
         setLocales(
           rows.map((l) => ({
             id: l.locale_id, city: l.city_name, locale: l.locale_name,
@@ -508,15 +519,13 @@ export default function LnatkApp() {
         };
       });
     try {
-      const { downloadExcel } = await import('./lib/exportReport');
       await downloadExcel(reportMonthLabel, buildLocaleRows(), buildMemberRows(), rows);
     } catch {
       triggerToast('Could not create the Excel file.');
     }
   };
 
-  const handleDownloadPdf = async () => {
-    const { printPdf } = await import('./lib/exportReport');
+  const handleDownloadPdf = () => {
     if (!printPdf(reportMonthLabel, buildLocaleRows(), buildMemberRows())) {
       triggerToast('Allow pop-ups to download the PDF.');
     }
@@ -711,26 +720,44 @@ export default function LnatkApp() {
           </div>
         </details>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs sheet-table">
+      <div
+        className="overflow-auto overscroll-contain"
+        style={{ maxHeight: 'calc(100dvh - 3.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))' }}
+      >
+        <table
+          className="w-full text-left text-xs sheet-table border-separate border-spacing-0"
+          style={{ '--name-w': fullNames ? '10rem' : '6rem' } as React.CSSProperties}
+        >
           <thead>
             <tr className="bg-zinc-100/80 dark:bg-obsidian-900 text-zinc-600 dark:text-zinc-400">
-              <th rowSpan={2} className="sticky-col-1 bg-zinc-100 dark:bg-obsidian-900 py-2 px-2 text-center font-mono text-[10px] w-9">
+              <th rowSpan={2} className="hidden sm:table-cell sticky top-0 left-0 z-30 bg-zinc-100 dark:bg-obsidian-900 py-2 px-2 text-center font-mono text-[10px] w-9 min-w-[2.25rem]">
                 #
               </th>
-              <th rowSpan={2} className="sticky-col-2 bg-zinc-100 dark:bg-obsidian-900 py-2 px-3.5 font-semibold text-xs text-zinc-900 dark:text-zinc-100 min-w-[132px] sm:min-w-[170px]">
-                Member Name
+              <th rowSpan={2} className="sticky top-0 left-0 sm:left-9 z-30 bg-zinc-100 dark:bg-obsidian-900 py-2 px-1.5 font-semibold text-xs text-zinc-900 dark:text-zinc-100 w-[var(--name-w)] min-w-[var(--name-w)] max-w-[var(--name-w)]">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="truncate">Name</span>
+                  <button
+                    type="button"
+                    onClick={() => setFullNames((v) => !v)}
+                    aria-pressed={fullNames}
+                    aria-label={fullNames ? 'Showing full names. Switch to surname first' : 'Showing surname first. Switch to full names'}
+                    title={fullNames ? 'Full name' : 'Surname first'}
+                    className="shrink-0 px-1 rounded border border-zinc-300 dark:border-obsidian-700 font-mono text-[9px] font-medium"
+                  >
+                    {fullNames ? 'Full' : 'Sur'}
+                  </button>
+                </div>
               </th>
               {visibleWeeks.map((w) => (
                 <th
                   key={w}
                   colSpan={sessions.filter((s) => s.weekNum === w).length + 1}
-                  className="py-1.5 px-2 text-center font-mono text-[10px] font-semibold tracking-wider text-zinc-700 dark:text-zinc-300 bg-zinc-100/60 dark:bg-obsidian-900"
+                  className="sticky top-0 z-20 h-8 py-1.5 px-0 text-center font-mono text-[10px] font-semibold tracking-wider text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-obsidian-900"
                 >
-                  {weekLabel(w)}
+                  <div className="sticky left-[var(--name-w)] sm:left-[calc(var(--name-w)+2.25rem)] w-max px-2 text-left">{weekLabel(w)}</div>
                 </th>
               ))}
-              <th colSpan={2} className="py-1.5 px-2.5 text-center font-mono text-[10px] font-semibold tracking-wider text-brand-800 dark:text-brand-300 bg-brand-50/50 dark:bg-brand-950/30">
+              <th colSpan={2} className="sticky top-0 z-20 h-8 py-1.5 px-2.5 text-center font-mono text-[10px] font-semibold tracking-wider text-brand-800 dark:text-brand-300 bg-brand-50 dark:bg-obsidian-900">
                 ROLLUP
               </th>
             </tr>
@@ -740,7 +767,7 @@ export default function LnatkApp() {
                 return (
                   <React.Fragment key={w}>
                     {wSessions.map((s) => (
-                      <th key={s.id} className="py-1.5 px-1 text-center font-mono w-14">
+                      <th key={s.id} className="sticky top-8 z-20 py-1.5 px-0.5 text-center font-mono w-11 min-w-[2.75rem] bg-zinc-50 dark:bg-obsidian-900 leading-tight">
                         <div className={`font-semibold text-[11px] ${s.type === 'TG' ? 'text-brand-700 dark:text-brand-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
                           {s.shortLabel}
                         </div>
@@ -751,14 +778,14 @@ export default function LnatkApp() {
                         </div>
                       </th>
                     ))}
-                    <th className="py-1.5 px-1.5 text-center font-mono w-14 whitespace-nowrap bg-zinc-100/70 dark:bg-obsidian-900">
+                    <th className="sticky top-8 z-20 py-1.5 px-0.5 text-center font-mono w-11 min-w-[2.75rem] whitespace-nowrap bg-zinc-100 dark:bg-obsidian-900">
                       <div className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300">Week {w}</div>
                     </th>
                   </React.Fragment>
                 );
               })}
-              <th className="py-1.5 px-2 text-center font-mono text-[10px] font-semibold">Weeks</th>
-              <th className="py-1.5 px-3 text-left font-mono text-[10px] font-semibold">Status</th>
+              <th className="sticky top-8 z-20 py-1.5 px-2 text-center font-mono text-[10px] font-semibold bg-zinc-50 dark:bg-obsidian-900">Weeks</th>
+              <th className="sticky top-8 z-20 py-1.5 px-3 text-left font-mono text-[10px] font-semibold bg-zinc-50 dark:bg-obsidian-900">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -773,11 +800,13 @@ export default function LnatkApp() {
 
               return (
                 <tr key={m.id} className="hover:bg-zinc-50/80 dark:hover:bg-obsidian-900/40">
-                  <td className="sticky-col-1 bg-white dark:bg-obsidian-950 py-1.5 px-2 text-center font-mono text-[11px] text-zinc-400 tabular-nums">
+                  <td className="hidden sm:table-cell sticky left-0 z-10 bg-white dark:bg-obsidian-950 py-1.5 px-2 text-center font-mono text-[11px] text-zinc-400 tabular-nums">
                     {idx + 1}
                   </td>
-                  <td className="sticky-col-2 bg-white dark:bg-obsidian-950 py-1.5 px-3.5 font-medium text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
-                    {m.fullName}
+                  <td className="sticky left-0 sm:left-9 z-10 bg-white dark:bg-obsidian-950 py-1.5 px-1.5 font-medium text-zinc-900 dark:text-zinc-100 whitespace-nowrap w-[var(--name-w)] min-w-[var(--name-w)] max-w-[var(--name-w)]">
+                    <div className="truncate w-[calc(var(--name-w)-0.75rem)]" title={m.fullName}>
+                      {fullNames ? m.fullName : surnameFirst(m.fullName)}
+                    </div>
                   </td>
                   {visibleWeeks.map((w) => {
                     const wSessions = sessions.filter((s) => s.weekNum === w);
@@ -796,8 +825,8 @@ export default function LnatkApp() {
                           const lg = logs[`${m.id}_${s.id}`] ?? { status: 'N' as AttendanceStatus };
                           const tone = (s.type === 'Practice' ? PRACTICE_TONE : CELL_TONE)[lg.status] ?? CELL_TONE.N;
                           return (
-                            <td key={s.id} className="p-0.5 text-center align-middle">
-                              <div className={`relative inline-flex items-center justify-center w-12 h-11 sm:w-11 sm:h-8 rounded-md font-mono font-semibold text-sm sm:text-xs focus-within:ring-2 focus-within:ring-brand-500 ${tone} ${locked ? 'opacity-50' : ''}`}>
+                            <td key={s.id} className="p-0.5 text-center align-middle w-11 min-w-[2.75rem]">
+                              <div className={`relative inline-flex items-center justify-center w-10 h-10 sm:h-8 rounded-md font-mono font-semibold text-sm sm:text-xs focus-within:ring-2 focus-within:ring-brand-500 ${tone} ${locked ? 'opacity-50' : ''}`}>
                                 <span className="pointer-events-none">{statusShort(lg.status)}</span>
                                 <select
                                   aria-label={`${m.fullName} ${s.label}`}
@@ -822,7 +851,7 @@ export default function LnatkApp() {
                             </td>
                           );
                         })}
-                        <td className={`p-1 text-center bg-zinc-50/70 dark:bg-obsidian-900/50 font-mono text-xs ${wkDot}`}>
+                        <td className={`p-0.5 w-11 min-w-[2.75rem] text-center bg-zinc-50 dark:bg-obsidian-900 font-mono text-xs ${wkDot}`}>
                           {wkBest}
                         </td>
                       </React.Fragment>
@@ -849,7 +878,7 @@ export default function LnatkApp() {
   const locSummary = computeLocaleSummary(currentLocale.id);
   const cityLocales = locales.filter((l) => l.city === selectedCity);
 
-  if (isSupabaseConfigured && role !== 'landing' && (dataLoading || loadError || locales.length === 0)) {
+  if (isSupabaseConfigured && (dataLoading || loadError || locales.length === 0)) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3 p-6 text-center bg-white dark:bg-obsidian-950 text-zinc-900 dark:text-zinc-100">
         <div className="font-bold tracking-widest text-sm">LNATK ATTENDANCE PLATFORM</div>
@@ -1047,7 +1076,6 @@ export default function LnatkApp() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-3 sm:p-6">
-          <React.Suspense fallback={<p className="text-xs text-zinc-600 dark:text-zinc-400">Loading…</p>}>
           {/* VIEW 1: CENTERED LOG-IN SCREEN */}
           {role === 'landing' && (
             <section className="min-h-[calc(100vh-6.5rem)] flex flex-col items-center justify-center">
@@ -1058,7 +1086,7 @@ export default function LnatkApp() {
                     TK
                   </div>
                   <h1 className="text-xl font-bold tracking-widest uppercase">Log-In</h1>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">LNATK District Attendance Platform</p>
+                  <p className="text-xs text-zinc-500">LNATK District Attendance Platform</p>
                 </div>
 
                 <div className="rounded-[28px] border-2 border-zinc-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-900 shadow-2xl overflow-hidden">
@@ -1069,7 +1097,7 @@ export default function LnatkApp() {
                         className="w-full py-6 px-6 text-center hover:bg-brand-50/60 dark:hover:bg-brand-950/30 transition-colors"
                       >
                         <div className="text-lg font-semibold">Regular TK</div>
-                        <div className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                        <div className="text-[11px] text-zinc-400">
                           Select your city & locale · View & edit locale table
                         </div>
                       </button>
@@ -1097,10 +1125,10 @@ export default function LnatkApp() {
                   {loginStep === 'tk' && (
                     <div className="p-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <button onClick={() => setLoginStep('stack')} className="text-xs text-zinc-600 dark:text-zinc-400">
+                        <button onClick={() => setLoginStep('stack')} className="text-xs text-zinc-400">
                           ← Back
                         </button>
-                        <span className="text-xs font-semibold uppercase text-brand-700 dark:text-brand-300">Regular TK</span>
+                        <span className="text-xs font-semibold uppercase text-brand-600">Regular TK</span>
                       </div>
                       <div className="space-y-3">
                         <div>
@@ -1137,8 +1165,7 @@ export default function LnatkApp() {
                       </div>
                       <button
                         onClick={() => setRole('tk')}
-                        disabled={locales.length === 0}
-                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold disabled:opacity-60"
+                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold"
                       >
                         Enter Locale Table
                       </button>
@@ -1201,8 +1228,7 @@ export default function LnatkApp() {
                           setCoordTab('duty');
                           setRole('coordinator');
                         }}
-                        disabled={locales.length === 0}
-                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold "
+                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold"
                       >
                         Unlock Coordinator Account
                       </button>
@@ -1616,7 +1642,6 @@ export default function LnatkApp() {
               onUpdate={handleUpdateMembers}
             />
           )}
-          </React.Suspense>
         </main>
       </div>
 

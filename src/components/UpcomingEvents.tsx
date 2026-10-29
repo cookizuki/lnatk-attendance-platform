@@ -12,7 +12,7 @@ export default function UpcomingEvents({ events }: { events: EventItem[] }) {
     <aside aria-labelledby="upcoming-events-title" className="space-y-3">
       <h2 id="upcoming-events-title" className="text-sm font-semibold">Upcoming events</h2>
       {list.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-200 dark:border-obsidian-800 bg-white dark:bg-obsidian-900 p-5 text-sm text-zinc-600 dark:text-zinc-400">
+        <div className="rounded-2xl border border-zinc-200 dark:border-obsidian-800 bg-white dark:bg-obsidian-900 p-5 text-sm text-zinc-500">
           No upcoming events right now. Check back soon.
         </div>
       ) : (
@@ -31,12 +31,12 @@ export default function UpcomingEvents({ events }: { events: EventItem[] }) {
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="text-sm font-semibold leading-snug">{e.title}</h3>
                     <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                        live ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-zinc-100 dark:bg-obsidian-800 text-zinc-600 dark:text-zinc-400'
-                      }`}>
+                      live ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-100 dark:bg-obsidian-800 text-zinc-500'
+                    }`}>
                       {rel}
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">{meta}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">{meta}</p>
                   {e.details && <p className="text-xs mt-1.5 whitespace-pre-wrap">{e.details}</p>}
                 </div>
               </li>
