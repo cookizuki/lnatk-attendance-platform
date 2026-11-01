@@ -81,9 +81,72 @@ const Legend = ({ items }: { items: Array<{ label: string; color: string }> }) =
   </div>
 );
 
+/** Sort by city, then locale, then last word of fullName, then first name. */
+const dirSort = (a: { city: string; locale: string; fullName: string }, b: { city: string; locale: string; fullName: string }) => {
+  const cmp = (x: string, y: string) => x.localeCompare(y, 'en', { sensitivity: 'base' });
+  const last = (n: string) => { const p = n.trim().split(/\s+/); return p[p.length - 1]; };
+  const first = (n: string) => { const p = n.trim().split(/\s+/); return p.slice(0, -1).join(' '); };
+  return cmp(a.city, b.city) || cmp(a.locale, b.locale) || cmp(last(a.fullName), last(b.fullName)) || cmp(first(a.fullName), first(b.fullName));
+};
+
+function DirectoryTable({ title, rows, emptyMsg }: { title: string; rows: Array<{ fullName: string; locale: string; city: string }>; emptyMsg: string }) {
+  return (
+    <div className={`${card} space-y-2`}>
+      <h4 className="text-xs font-semibold">{title} <span className="font-mono text-zinc-500">({rows.length})</span></h4>
+      {rows.length === 0 ? (
+        <p className="text-xs text-zinc-400">{emptyMsg}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-separate border-spacing-0">
+            <thead>
+              <tr className="sticky top-0 z-10 bg-zinc-50 dark:bg-obsidian-900 text-zinc-500 dark:text-zinc-400">
+                <th className="py-2 px-2 font-mono text-[10px] w-8">#</th>
+                <th className="py-2 px-2 font-semibold whitespace-nowrap">Name</th>
+                <th className="py-2 px-2 font-semibold whitespace-nowrap">Locale</th>
+                <th className="py-2 px-2 font-semibold whitespace-nowrap">City</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={`${r.fullName}-${r.locale}-${i}`} className="h-11 border-t border-zinc-100 dark:border-obsidian-800 hover:bg-zinc-50/80 dark:hover:bg-obsidian-900/40">
+                  <td className="px-2 font-mono text-[11px] text-zinc-400 tabular-nums">{i + 1}</td>
+                  <td className="px-2 whitespace-nowrap font-medium text-zinc-900 dark:text-zinc-100">{r.fullName}</td>
+                  <td className="px-2 whitespace-nowrap text-zinc-600 dark:text-zinc-300">{r.locale}</td>
+                  <td className="px-2 whitespace-nowrap text-zinc-600 dark:text-zinc-300">{r.city}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TkOverview({ members, locales, rollup, monthLabel }: Props) {
   const [city, setCity] = useState<'all' | CityName>('all');
   const [localeId, setLocaleId] = useState<number | 'all'>('all');
+  const [dirSearch, setDirSearch] = useState('');
+
+  // Directory tables: district TKs and trainees with locale / city info
+  const directoryRows = useMemo(() => {
+    const q = dirSearch.toLowerCase();
+    return members
+      .filter((m) => !m.leftAt)
+      .flatMap((m) => {
+        const loc = locales.find((l) => l.id === m.localeId);
+        if (!loc) return [];
+        const cat = m.category ?? 'locale';
+        if (cat !== 'district' && cat !== 'trainee') return [];
+        const row = { fullName: m.fullName, locale: loc.name, city: loc.city, category: cat };
+        if (q && !row.fullName.toLowerCase().includes(q) && !row.locale.toLowerCase().includes(q) && !row.city.toLowerCase().includes(q)) return [];
+        return [row];
+      })
+      .sort(dirSort);
+  }, [members, locales, dirSearch]);
+
+  const districtRows = useMemo(() => directoryRows.filter((r) => r.category === 'district'), [directoryRows]);
+  const traineeRows = useMemo(() => directoryRows.filter((r) => r.category === 'trainee'), [directoryRows]);
 
   const rows = useMemo(() => {
     return members
@@ -138,6 +201,21 @@ export default function TkOverview({ members, locales, rollup, monthLabel }: Pro
             <option value="all">All locales</option>
             {cityLocales.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
+        </div>
+      </div>
+
+      {/* Directory tables: District TK and Trainees */}
+      <div className="space-y-3">
+        <input
+          type="text"
+          placeholder="Search by name, locale, or city…"
+          value={dirSearch}
+          onChange={(e) => setDirSearch(e.target.value)}
+          className="w-full max-w-xs px-3 py-2 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs placeholder:text-zinc-400"
+        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <DirectoryTable title="District TK" rows={districtRows} emptyMsg="No district TKs yet" />
+          <DirectoryTable title="Trainees" rows={traineeRows} emptyMsg="No trainees yet" />
         </div>
       </div>
 
