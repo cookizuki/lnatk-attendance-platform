@@ -660,12 +660,16 @@ export default function LnatkApp() {
   };
 
   const renderEditableDutyTable = (sourceRole: 'self' | 'coordinator' | 'officer') => {
-    const filteredMembers = members.filter(
-      (m) =>
-        m.localeId === currentLocale.id &&
-        !m.leftAt &&
-        m.fullName.toLowerCase().includes(memberSearch.toLowerCase())
-    );
+    const sorted = [...members]
+      .filter(
+        (m) =>
+          m.localeId === currentLocale.id &&
+          !m.leftAt &&
+          m.fullName.toLowerCase().includes(memberSearch.toLowerCase())
+      )
+      .sort((a, b) =>
+        a.fullName.localeCompare(b.fullName, 'en', { sensitivity: 'base' })
+      );
 
     const visibleWeeks = weekView === 'all' || !weekNums.includes(weekView) ? weekNums : [weekView];
     const chip = (active: boolean) =>
@@ -677,6 +681,9 @@ export default function LnatkApp() {
     const legendChip = (cls: string, text: string) => (
       <span className={`inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded font-mono text-[11px] font-semibold ${cls}`}>{text}</span>
     );
+
+    const pageBg = 'bg-white dark:bg-obsidian-950';
+    const headerBg = 'bg-zinc-100 dark:bg-obsidian-900';
 
     return (
       <>
@@ -720,94 +727,63 @@ export default function LnatkApp() {
           </div>
         </details>
       </div>
-      <div
-        className="overflow-auto overscroll-contain"
-        style={{ maxHeight: 'calc(100dvh - 3.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))' }}
-      >
-        <table
-          className="w-full text-left text-xs sheet-table border-separate border-spacing-0"
-          style={{ '--name-w': fullNames ? '10rem' : '6rem' } as React.CSSProperties}
-        >
-          <thead>
-            <tr className="bg-zinc-100/80 dark:bg-obsidian-900 text-zinc-600 dark:text-zinc-400">
-              <th rowSpan={2} className="hidden sm:table-cell sticky top-0 left-0 z-30 bg-zinc-100 dark:bg-obsidian-900 py-2 px-2 text-center font-mono text-[10px] w-9 min-w-[2.25rem]">
-                #
-              </th>
-              <th rowSpan={2} className="sticky top-0 left-0 sm:left-9 z-30 bg-zinc-100 dark:bg-obsidian-900 py-2 px-1.5 font-semibold text-xs text-zinc-900 dark:text-zinc-100 w-[var(--name-w)] min-w-[var(--name-w)] max-w-[var(--name-w)]">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="truncate">Name</span>
-                  <button
-                    type="button"
-                    onClick={() => setFullNames((v) => !v)}
-                    aria-pressed={fullNames}
-                    aria-label={fullNames ? 'Showing full names. Switch to surname first' : 'Showing surname first. Switch to full names'}
-                    title={fullNames ? 'Full name' : 'Surname first'}
-                    className="shrink-0 px-1 rounded border border-zinc-300 dark:border-obsidian-700 font-mono text-[9px] font-medium"
-                  >
-                    {fullNames ? 'Full' : 'Sur'}
-                  </button>
-                </div>
-              </th>
-              {visibleWeeks.map((w) => (
-                <th
-                  key={w}
-                  colSpan={sessions.filter((s) => s.weekNum === w).length + 1}
-                  className="sticky top-0 z-20 h-8 py-1.5 px-0 text-center font-mono text-[10px] font-semibold tracking-wider text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-obsidian-900"
-                >
-                  <div className="sticky left-[var(--name-w)] sm:left-[calc(var(--name-w)+2.25rem)] w-max px-2 text-left">{weekLabel(w)}</div>
-                </th>
-              ))}
-              <th colSpan={2} className="sticky top-0 z-20 h-8 py-1.5 px-2.5 text-center font-mono text-[10px] font-semibold tracking-wider text-brand-800 dark:text-brand-300 bg-brand-50 dark:bg-obsidian-900">
-                ROLLUP
-              </th>
-            </tr>
-            <tr className="bg-zinc-50 dark:bg-obsidian-900/80 text-zinc-500 dark:text-zinc-400">
+      {/* Two-pane attendance grid */}
+      <div className="h-[calc(100dvh-64px)] overflow-y-auto">
+        <div className="flex">
+          {/* Left pane: names */}
+          <div
+            className="duty-names-pane w-32 shrink-0 border-r border-zinc-200 dark:border-obsidian-800 overflow-x-auto overscroll-x-contain"
+            style={{ scrollbarWidth: 'none' } as React.CSSProperties}
+          >
+            <style>{`.duty-names-pane::-webkit-scrollbar { display: none; }`}</style>
+            <div className={`sticky top-0 z-10 h-14 flex items-center px-2 font-semibold text-xs text-zinc-900 dark:text-zinc-100 ${headerBg}`}>
+              Name
+            </div>
+            {sorted.map((m, idx) => (
+              <div key={m.id} className="h-11 flex items-center px-2 whitespace-nowrap text-xs font-medium text-zinc-900 dark:text-zinc-100">
+                <span className="mr-1.5 font-mono text-[10px] text-zinc-400 tabular-nums">{idx + 1}</span>
+                <span title={m.fullName}>{m.fullName}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Right pane: session cells */}
+          <div className="flex-1 overflow-x-auto overscroll-x-contain">
+            {/* Header row */}
+            <div className={`sticky top-0 z-10 h-14 flex items-end ${headerBg}`}>
               {visibleWeeks.map((w) => {
                 const wSessions = sessions.filter((s) => s.weekNum === w);
                 return (
                   <React.Fragment key={w}>
-                    {wSessions.map((s) => (
-                      <th key={s.id} className="sticky top-8 z-20 py-1.5 px-0.5 text-center font-mono w-11 min-w-[2.75rem] bg-zinc-50 dark:bg-obsidian-900 leading-tight">
-                        <div className={`font-semibold text-[11px] ${s.type === 'TG' ? 'text-brand-700 dark:text-brand-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
-                          {s.shortLabel}
+                    <div className="sticky left-0 z-10 flex items-end">
+                      <div className={`px-2 py-1 font-mono text-[10px] font-semibold tracking-wider text-zinc-700 dark:text-zinc-300 whitespace-nowrap ${headerBg}`}>
+                        {weekLabel(w)}
+                      </div>
+                    </div>
+                    <div className="flex">
+                      {wSessions.map((s) => (
+                        <div key={s.id} className="w-11 min-w-[2.75rem] text-center font-mono leading-tight py-1 px-0.5">
+                          <div className={`font-semibold text-[11px] ${s.type === 'TG' ? 'text-brand-700 dark:text-brand-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                            {s.shortLabel}
+                          </div>
+                          <div className="text-[9px] text-zinc-400 font-normal">{s.date.slice(5)}
+                            {s.statusWindow !== 'closed' && (
+                              <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 align-middle" title="Open for entries" />
+                            )}
+                          </div>
                         </div>
-                        <div className="text-[9px] text-zinc-400 font-normal">{s.date.slice(5)}
-                          {s.statusWindow !== 'closed' && (
-                            <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 align-middle" title="Open for entries" />
-                          )}
-                        </div>
-                      </th>
-                    ))}
-                    <th className="sticky top-8 z-20 py-1.5 px-0.5 text-center font-mono w-11 min-w-[2.75rem] whitespace-nowrap bg-zinc-100 dark:bg-obsidian-900">
-                      <div className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300">Week {w}</div>
-                    </th>
+                      ))}
+                    </div>
                   </React.Fragment>
                 );
               })}
-              <th className="sticky top-8 z-20 py-1.5 px-2 text-center font-mono text-[10px] font-semibold bg-zinc-50 dark:bg-obsidian-900">Weeks</th>
-              <th className="sticky top-8 z-20 py-1.5 px-3 text-left font-mono text-[10px] font-semibold bg-zinc-50 dark:bg-obsidian-900">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMembers.map((m, idx) => {
-              const rollup = computeMemberRollup(m.id);
-              const statusStyle =
-                rollup.bucket === '3-4 Weeks Duty'
-                  ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
-                  : rollup.bucket === '1-2 Weeks Duty'
-                  ? 'text-brand-700 dark:text-brand-300 bg-brand-500/10 border-brand-500/20'
-                  : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20';
+            </div>
 
+            {/* Body rows */}
+            {sorted.map((m) => {
+              const rollup = computeMemberRollup(m.id);
               return (
-                <tr key={m.id} className="hover:bg-zinc-50/80 dark:hover:bg-obsidian-900/40">
-                  <td className="hidden sm:table-cell sticky left-0 z-10 bg-white dark:bg-obsidian-950 py-1.5 px-2 text-center font-mono text-[11px] text-zinc-400 tabular-nums">
-                    {idx + 1}
-                  </td>
-                  <td className="sticky left-0 sm:left-9 z-10 bg-white dark:bg-obsidian-950 py-1.5 px-1.5 font-medium text-zinc-900 dark:text-zinc-100 whitespace-nowrap w-[var(--name-w)] min-w-[var(--name-w)] max-w-[var(--name-w)]">
-                    <div className="truncate w-[calc(var(--name-w)-0.75rem)]" title={m.fullName}>
-                      {fullNames ? m.fullName : surnameFirst(m.fullName)}
-                    </div>
-                  </td>
+                <div key={m.id} className="h-11 flex items-center">
                   {visibleWeeks.map((w) => {
                     const wSessions = sessions.filter((s) => s.weekNum === w);
                     const wkBest = rollup.weekMarkers[w];
@@ -825,7 +801,7 @@ export default function LnatkApp() {
                           const lg = logs[`${m.id}_${s.id}`] ?? { status: 'N' as AttendanceStatus };
                           const tone = (s.type === 'Practice' ? PRACTICE_TONE : CELL_TONE)[lg.status] ?? CELL_TONE.N;
                           return (
-                            <td key={s.id} className="p-0.5 text-center align-middle w-11 min-w-[2.75rem]">
+                            <div key={s.id} className="w-11 min-w-[2.75rem] flex items-center justify-center p-0.5">
                               <div className={`relative inline-flex items-center justify-center w-10 h-10 sm:h-8 rounded-md font-mono font-semibold text-sm sm:text-xs focus-within:ring-2 focus-within:ring-brand-500 ${tone} ${locked ? 'opacity-50' : ''}`}>
                                 <span className="pointer-events-none">{statusShort(lg.status)}</span>
                                 <select
@@ -848,28 +824,20 @@ export default function LnatkApp() {
                                   ))}
                                 </select>
                               </div>
-                            </td>
+                            </div>
                           );
                         })}
-                        <td className={`p-0.5 w-11 min-w-[2.75rem] text-center bg-zinc-50 dark:bg-obsidian-900 font-mono text-xs ${wkDot}`}>
+                        <div className={`w-11 min-w-[2.75rem] flex items-center justify-center bg-zinc-50 dark:bg-obsidian-900 font-mono text-xs ${wkDot}`}>
                           {wkBest}
-                        </td>
+                        </div>
                       </React.Fragment>
                     );
                   })}
-                  <td className="py-1.5 px-2 text-center font-mono font-semibold text-xs tabular-nums">
-                    {rollup.weeksDuty}
-                  </td>
-                  <td className="py-1.5 px-3 whitespace-nowrap">
-                    <span className={`inline-block px-2 py-0.5 rounded border text-[11px] font-medium ${statusStyle}`}>
-                      {rollup.bucket}
-                    </span>
-                  </td>
-                </tr>
+                </div>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
       </>
     );
