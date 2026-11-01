@@ -204,21 +204,6 @@ export default function TkOverview({ members, locales, rollup, monthLabel }: Pro
         </div>
       </div>
 
-      {/* Directory tables: District TK and Trainees */}
-      <div className="space-y-3">
-        <input
-          type="text"
-          placeholder="Search by name, locale, or city…"
-          value={dirSearch}
-          onChange={(e) => setDirSearch(e.target.value)}
-          className="w-full max-w-xs px-3 py-2 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs placeholder:text-zinc-400"
-        />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <DirectoryTable title="District TK" rows={districtRows} emptyMsg="No district TKs yet" />
-          <DirectoryTable title="Trainees" rows={traineeRows} emptyMsg="No trainees yet" />
-        </div>
-      </div>
-
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[{ label: 'Total TKs', n: total, color: 'currentColor' }, ...(Object.keys(STATUS_META) as Status[]).map((k) => ({ label: STATUS_META[k].label, n: counts[k], color: STATUS_META[k].color }))].map((t) => (
           <div key={t.label} className={card}>
@@ -275,6 +260,22 @@ export default function TkOverview({ members, locales, rollup, monthLabel }: Pro
           {groups.length === 0 && <p className="text-xs text-zinc-400">No TKs yet.</p>}
         </div>
         <Legend items={BUCKETS.map((b) => ({ label: b.label, color: b.color }))} />
+      </div>
+
+      {/* Directory section: District TK and Trainees */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold">Directory</h3>
+        <input
+          type="text"
+          placeholder="Search by name, locale, or city…"
+          value={dirSearch}
+          onChange={(e) => setDirSearch(e.target.value)}
+          className="w-full max-w-xs px-3 py-2 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs placeholder:text-zinc-400"
+        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <DirectoryTable title="District TK" rows={districtRows} emptyMsg="No district TKs yet" />
+          <DirectoryTable title="Trainees" rows={traineeRows} emptyMsg="No trainees yet" />
+        </div>
       </div>
     </section>
   );
