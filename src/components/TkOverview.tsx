@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CityName, LocaleItem, MemberItem, TK_CATEGORY_LABELS, TkCategory } from '../types/lnatk';
+import MagicBento from './MagicBento';
 
 interface Props {
   members: MemberItem[];
   locales: LocaleItem[];
   rollup: (memberId: string) => { weeksDuty: number };
   monthLabel: string;
+  isDark?: boolean;
 }
 
 type Status = 'active' | 'inactive' | 'hold';
@@ -25,6 +27,17 @@ type BucketKey = (typeof BUCKETS)[number]['key'];
 const select =
   'px-3 py-2 rounded-lg border border-app bg-surface text-app text-base sm:text-xs';
 const card = 'border border-app rounded-xl bg-surface p-4 shadow-sm';
+
+function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
+  return (
+    <div className="flex flex-col justify-between h-full bg-transparent">
+      <div className="text-[11px] font-semibold text-app-muted uppercase tracking-wider">{label}</div>
+      <div className="text-3xl font-bold font-mono tracking-tight" style={{ color: color ?? 'inherit' }}>
+        {value}
+      </div>
+    </div>
+  );
+}
 
 function Donut({ counts, total }: { counts: Record<Status, number>; total: number }) {
   const R = 42;
@@ -47,6 +60,27 @@ function Donut({ counts, total }: { counts: Record<Status, number>; total: numbe
       <text x="60" y="58" textAnchor="middle" className="fill-current text-app" fontSize="22" fontWeight="700">{total}</text>
       <text x="60" y="74" textAnchor="middle" className="fill-current text-app-muted" fontSize="9" opacity="0.7">TKs</text>
     </svg>
+  );
+}
+
+function StatusDonutCard({ counts, total }: { counts: Record<Status, number>; total: number }) {
+  return (
+    <div className="flex flex-col justify-between h-full space-y-3 bg-transparent">
+      <h4 className="text-xs font-semibold text-app">Active, inactive and on hold</h4>
+      <div className="flex flex-wrap items-center gap-4 my-auto">
+        <Donut counts={counts} total={total} />
+        <ul className="space-y-1.5 text-sm">
+          {(Object.keys(STATUS_META) as Status[]).map((k) => (
+            <li key={k} className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: STATUS_META[k].color }} />
+              <span className="text-app">{STATUS_META[k].label}</span>
+              <span className="font-mono font-semibold text-app">{counts[k]}</span>
+              <span className="text-xs text-app-muted">{total ? Math.round((counts[k] / total) * 100) : 0}%</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }
 
@@ -75,11 +109,83 @@ const Legend = ({ items }: { items: Array<{ label: string; color: string }> }) =
   <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-app-muted">
     {items.map((i) => (
       <span key={i.label} className="inline-flex items-center gap-1.5">
-        <span className="w-2.5 h-2.5 rounded-sm" style={{ background: i.color }} />{i.label}
+        <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: i.color }} />{i.label}
       </span>
     ))}
   </div>
 );
+
+function ByCategoryBarsCard({
+  categories,
+  rows,
+  catMax,
+}: {
+  categories: TkCategory[];
+  rows: Array<{ category: TkCategory; status: Status }>;
+  catMax: number;
+}) {
+  return (
+    <div className="flex flex-col justify-between h-full space-y-3 bg-transparent">
+      <h4 className="text-xs font-semibold text-app">By category</h4>
+      <div className="space-y-3 my-auto">
+        {categories.map((c) => {
+          const cr = rows.filter((r) => r.category === c);
+          return (
+            <div key={c} className="space-y-1">
+              <div className="text-xs text-app">{TK_CATEGORY_LABELS[c]}</div>
+              <StackBar
+                max={catMax}
+                parts={(Object.keys(STATUS_META) as Status[]).map((k) => ({
+                  label: STATUS_META[k].label,
+                  color: STATUS_META[k].color,
+                  n: cr.filter((r) => r.status === k).length,
+                }))}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <Legend items={(Object.keys(STATUS_META) as Status[]).map((k) => STATUS_META[k])} />
+    </div>
+  );
+}
+
+function StatusesByCityCard({
+  groups,
+  groupMax,
+  localeId,
+  city,
+}: {
+  groups: Array<{ name: string; rows: Array<{ bucket: BucketKey }> }>;
+  groupMax: number;
+  localeId: number | 'all';
+  city: 'all' | CityName;
+}) {
+  return (
+    <div className="flex flex-col justify-between h-full space-y-3 bg-transparent">
+      <h4 className="text-xs font-semibold text-app">
+        Total of statuses{localeId === 'all' && city === 'all' ? ' by city' : localeId === 'all' ? ` in ${city}` : ''}
+      </h4>
+      <div className="space-y-3 my-auto">
+        {groups.map((g) => (
+          <div key={g.name} className="space-y-1">
+            <div className="text-xs text-app">{g.name}</div>
+            <StackBar
+              max={groupMax}
+              parts={BUCKETS.map((b) => ({
+                label: b.label,
+                color: b.color,
+                n: g.rows.filter((r) => r.bucket === b.key).length,
+              }))}
+            />
+          </div>
+        ))}
+        {groups.length === 0 && <p className="text-xs text-app-muted">No TKs yet.</p>}
+      </div>
+      <Legend items={BUCKETS.map((b) => ({ label: b.label, color: b.color }))} />
+    </div>
+  );
+}
 
 /** Sort by city, then locale, then last word of fullName, then first name. */
 const dirSort = (a: { city: string; locale: string; fullName: string }, b: { city: string; locale: string; fullName: string }) => {
@@ -123,10 +229,25 @@ function DirectoryTable({ title, rows, emptyMsg }: { title: string; rows: Array<
   );
 }
 
-export default function TkOverview({ members, locales, rollup, monthLabel }: Props) {
+export default function TkOverview({ members, locales, rollup, monthLabel, isDark: isDarkProp }: Props) {
   const [city, setCity] = useState<'all' | CityName>('all');
   const [localeId, setLocaleId] = useState<number | 'all'>('all');
   const [dirSearch, setDirSearch] = useState('');
+
+  const [systemDark, setSystemDark] = useState(() =>
+    typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : true
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const observer = new MutationObserver(() => {
+      setSystemDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const isDark = isDarkProp ?? systemDark;
 
   // Directory tables: district TKs and trainees with locale / city info
   const directoryRows = useMemo(() => {
@@ -184,13 +305,14 @@ export default function TkOverview({ members, locales, rollup, monthLabel }: Pro
   const groupMax = Math.max(1, ...groups.map((g) => g.rows.length));
 
   const cityLocales = locales.filter((l) => city === 'all' || l.city === city);
+  const cityRowSpan = groups.length > 5 ? 4 : 3;
 
   return (
     <section className="max-w-4xl mx-auto space-y-4 select-text">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold">TK Overview — {monthLabel}</h3>
-          <p className="text-[11px] text-zinc-500">Active = at least one duty in the month · Inactive = no duty · Hold is set by officers in Members.</p>
+          <h3 className="text-sm font-semibold text-app">TK Overview — {monthLabel}</h3>
+          <p className="text-[11px] text-app-muted">Active = at least one duty in the month · Inactive = no duty · Hold is set by officers in Members.</p>
         </div>
         <div className="flex gap-2">
           <select className={select} aria-label="City" value={city} onChange={(e) => { setCity(e.target.value as 'all' | CityName); setLocaleId('all'); }}>
@@ -204,63 +326,31 @@ export default function TkOverview({ members, locales, rollup, monthLabel }: Pro
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {[{ label: 'Total TKs', n: total, color: 'currentColor' }, ...(Object.keys(STATUS_META) as Status[]).map((k) => ({ label: STATUS_META[k].label, n: counts[k], color: STATUS_META[k].color }))].map((t) => (
-          <div key={t.label} className={card}>
-            <div className="text-[11px] text-zinc-500">{t.label}</div>
-            <div className="text-2xl font-bold" style={{ color: t.color }}>{t.n}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className={`${card} space-y-3`}>
-          <h4 className="text-xs font-semibold">Active, inactive and on hold</h4>
-          <div className="flex items-center gap-4">
-            <Donut counts={counts} total={total} />
-            <ul className="space-y-1.5 text-sm">
-              {(Object.keys(STATUS_META) as Status[]).map((k) => (
-                <li key={k} className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: STATUS_META[k].color }} />
-                  <span>{STATUS_META[k].label}</span>
-                  <span className="font-mono font-semibold">{counts[k]}</span>
-                  <span className="text-xs text-zinc-500">{total ? Math.round((counts[k] / total) * 100) : 0}%</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        <div className={`${card} space-y-3`}>
-          <h4 className="text-xs font-semibold">By category</h4>
-          <div className="space-y-3">
-            {categories.map((c) => {
-              const cr = rows.filter((r) => r.category === c);
-              return (
-                <div key={c} className="space-y-1">
-                  <div className="text-xs">{TK_CATEGORY_LABELS[c]}</div>
-                  <StackBar max={catMax} parts={(Object.keys(STATUS_META) as Status[]).map((k) => ({ label: STATUS_META[k].label, color: STATUS_META[k].color, n: cr.filter((r) => r.status === k).length }))} />
-                </div>
-              );
-            })}
-          </div>
-          <Legend items={(Object.keys(STATUS_META) as Status[]).map((k) => STATUS_META[k])} />
-        </div>
-      </div>
-
-      <div className={`${card} space-y-3`}>
-        <h4 className="text-xs font-semibold">Total of statuses{localeId === 'all' && city === 'all' ? ' by city' : localeId === 'all' ? ` in ${city}` : ''}</h4>
-        <div className="space-y-3">
-          {groups.map((g) => (
-            <div key={g.name} className="space-y-1">
-              <div className="text-xs">{g.name}</div>
-              <StackBar max={groupMax} parts={BUCKETS.map((b) => ({ label: b.label, color: b.color, n: g.rows.filter((r) => r.bucket === b.key).length }))} />
-            </div>
-          ))}
-          {groups.length === 0 && <p className="text-xs text-zinc-400">No TKs yet.</p>}
-        </div>
-        <Legend items={BUCKETS.map((b) => ({ label: b.label, color: b.color }))} />
-      </div>
+      <MagicBento
+        theme={isDark ? 'dark' : 'light'}
+        columns={4}
+        rowHeight={120}
+        gap={12}
+        radius={16}
+        glowColor="#8b5cf6"
+        enableBorderGlow
+        enableSpotlight
+        spotlightRadius={260}
+        enableStars={false}
+        enableTilt={false}
+        enableMagnetism={false}
+        clickEffect={false}
+        intro
+        items={[
+          { content: <StatCard label="Total TKs" value={total} /> },
+          { content: <StatCard label="Active" value={counts.active} color={STATUS_META.active.color} /> },
+          { content: <StatCard label="Inactive" value={counts.inactive} color={STATUS_META.inactive.color} /> },
+          { content: <StatCard label="On hold" value={counts.hold} color={STATUS_META.hold.color} /> },
+          { content: <StatusDonutCard counts={counts} total={total} />, colSpan: 2, rowSpan: 3 },
+          { content: <ByCategoryBarsCard categories={categories} rows={rows} catMax={catMax} />, colSpan: 2, rowSpan: 3 },
+          { content: <StatusesByCityCard groups={groups} groupMax={groupMax} localeId={localeId} city={city} />, colSpan: 4, rowSpan: cityRowSpan },
+        ]}
+      />
 
       {/* Directory section: District TK and Trainees */}
       <div className="space-y-3">
