@@ -12,8 +12,8 @@ interface Props {
 }
 
 const input =
-  'px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-base sm:text-sm';
-const btn = 'px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 text-xs font-semibold';
+  'px-3 py-2 rounded-lg border border-app bg-surface-2 text-app text-base sm:text-sm placeholder:text-app-muted';
+const btn = 'px-3 py-2 rounded-lg border border-app bg-surface-2 hover:bg-surface text-app text-xs font-semibold transition-colors';
 
 export default function MemberManager({ locale, members, onAdd, onRename, onRemove, onRestore, onUpdate }: Props) {
   const [newName, setNewName] = useState('');
@@ -36,9 +36,9 @@ export default function MemberManager({ locale, members, onAdd, onRename, onRemo
 
   return (
     <section className="max-w-2xl mx-auto space-y-4 select-text">
-      <div className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 space-y-3">
-        <h3 className="text-sm font-semibold">Members of {locale.name} ({locale.city}) · {active.length}</h3>
-        <p className="text-[11px] text-zinc-500">
+      <div className="border border-app rounded-xl bg-surface p-4 space-y-3 shadow-sm">
+        <h3 className="text-sm font-semibold text-app">Members of {locale.name} ({locale.city}) · {active.length}</h3>
+        <p className="text-[11px] text-app-muted">
           Pick another locale from the sidebar to manage its members. Category and Hold are only used in the officer TK Overview; TKs and coordinators never see them.
         </p>
         <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); onAdd(newName); setNewName(''); }}>
@@ -48,8 +48,8 @@ export default function MemberManager({ locale, members, onAdd, onRename, onRemo
       </div>
 
       {sel.length > 0 && (
-        <div className="sticky top-0 z-10 border border-brand-500/40 rounded-xl bg-white dark:bg-obsidian-900 p-3 flex flex-wrap items-center gap-2 shadow-sm">
-          <span className="text-xs font-semibold">{sel.length} selected</span>
+        <div className="sticky top-0 z-10 border border-brand-500/40 rounded-xl bg-surface p-3 flex flex-wrap items-center gap-2 shadow-md">
+          <span className="text-xs font-semibold text-app">{sel.length} selected</span>
           <select className={`${input} !py-1.5 !text-xs`} value="" onChange={(e) => e.target.value && onUpdate(sel, { category: e.target.value as TkCategory })}>
             <option value="">Set category…</option>
             {(Object.keys(TK_CATEGORY_LABELS) as TkCategory[]).map((c) => <option key={c} value={c}>{TK_CATEGORY_LABELS[c]}</option>)}
@@ -60,10 +60,10 @@ export default function MemberManager({ locale, members, onAdd, onRename, onRemo
         </div>
       )}
 
-      <div className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 divide-y divide-zinc-100 dark:divide-obsidian-800">
-        {active.length === 0 && <div className="p-4 text-xs text-zinc-400">No members yet.</div>}
-        {active.map((m) => (
-          <div key={m.id} className="p-2.5 space-y-2">
+      <div className="border border-app rounded-xl bg-surface divide-y divide-app shadow-sm">
+        {active.length === 0 && <div className="p-4 text-xs text-app-muted">No members yet.</div>}
+        {active.map((m, idx) => (
+          <div key={m.id} className={`p-2.5 space-y-2 transition-colors hover:bg-surface-2 ${idx % 2 === 1 ? 'bg-surface-2-subtle' : ''}`}>
             <div className="flex items-center gap-2">
               <input type="checkbox" aria-label={`Select ${m.fullName}`} className="w-5 h-5 shrink-0" checked={sel.includes(m.id)} onChange={() => toggle(m.id)} />
               <input className={`${input} flex-1 min-w-0`} value={edits[m.id] ?? m.fullName}
@@ -102,12 +102,12 @@ export default function MemberManager({ locale, members, onAdd, onRename, onRemo
       </div>
 
       {removed.length > 0 && (
-        <details className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900">
-          <summary className="px-4 py-2.5 text-xs font-semibold cursor-pointer">Removed members ({removed.length})</summary>
-          <div className="divide-y divide-zinc-100 dark:divide-obsidian-800">
+        <details className="border border-app rounded-xl bg-surface shadow-sm">
+          <summary className="px-4 py-2.5 text-xs font-semibold text-app cursor-pointer">Removed members ({removed.length})</summary>
+          <div className="divide-y divide-app">
             {removed.map((m) => (
-              <div key={m.id} className="px-4 py-2 flex items-center justify-between text-sm">
-                <span className="text-zinc-500">{m.fullName}</span>
+              <div key={m.id} className="px-4 py-2 flex items-center justify-between text-sm text-app">
+                <span className="text-app-muted">{m.fullName}</span>
                 <button onClick={() => onRestore(m.id)} className="text-xs font-semibold text-brand-700 dark:text-brand-300">Restore</button>
               </div>
             ))}

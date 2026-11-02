@@ -128,6 +128,7 @@ export default function LnatkApp() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [weekView, setWeekView] = useState<number | 'all'>('all');
   const [fullNames, setFullNames] = useState(false);
+  const [hoveredDutyRow, setHoveredDutyRow] = useState<number | null>(null);
   const weekViewInit = React.useRef('');
   const [editHistory, setEditHistory] = useState<EditHistoryItem[]>([
     {
@@ -659,6 +660,8 @@ export default function LnatkApp() {
     triggerToast(leftAt ? 'Member removed' : 'Member restored');
   };
 
+  const CELL_WIDTH = 'w-11 min-w-[2.75rem] max-w-[2.75rem] shrink-0';
+
   const renderEditableDutyTable = (sourceRole: 'self' | 'coordinator' | 'officer') => {
     const sorted = [...members]
       .filter(
@@ -673,21 +676,18 @@ export default function LnatkApp() {
 
     const visibleWeeks = weekView === 'all' || !weekNums.includes(weekView) ? weekNums : [weekView];
     const chip = (active: boolean) =>
-      `shrink-0 px-3 py-2 rounded-xl border text-left leading-tight ${
+      `shrink-0 px-3 py-2 rounded-xl border text-left leading-tight transition-colors ${
         active
           ? 'bg-brand-800 border-brand-800 text-white'
-          : 'border-zinc-200 dark:border-obsidian-700 text-zinc-600 dark:text-zinc-300'
+          : 'border-app bg-surface-2 text-app-muted hover:text-app'
       }`;
     const legendChip = (cls: string, text: string) => (
       <span className={`inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded font-mono text-[11px] font-semibold ${cls}`}>{text}</span>
     );
 
-    const pageBg = 'bg-white dark:bg-obsidian-950';
-    const headerBg = 'bg-zinc-100 dark:bg-obsidian-900';
-
     return (
       <>
-      <div className="px-3 sm:px-4 py-3 space-y-2.5 border-b border-zinc-200 dark:border-obsidian-800">
+      <div className="px-3 sm:px-4 py-3 space-y-2.5 border-b border-app bg-surface">
         <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Weeks">
           {weekNums.map((w) => (
             <button key={w} role="tab" aria-selected={weekView === w} onClick={() => setWeekView(w)} className={chip(weekView === w)}>
@@ -704,10 +704,10 @@ export default function LnatkApp() {
           </button>
         </div>
         <details className="text-xs">
-          <summary className="cursor-pointer text-zinc-500 py-1">What do the letters mean?</summary>
-          <div className="mt-2 space-y-2">
+          <summary className="cursor-pointer text-app-muted hover:text-app py-1">What do the letters mean?</summary>
+          <div className="mt-2 space-y-2 text-app">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <span className="font-semibold text-zinc-500">PM, WS, TG, SPBB</span>
+              <span className="font-semibold text-app-muted">PM, WS, TG, SPBB</span>
               <span>{legendChip(CELL_TONE.D, 'D')} Dumalo</span>
               <span>{legendChip(CELL_TONE.S, 'S')} Sumayaw</span>
               <span>{legendChip(CELL_TONE.P, 'P')} Program</span>
@@ -715,7 +715,7 @@ export default function LnatkApp() {
               <span>{legendChip(CELL_TONE.N, 'N')} No Attendance</span>
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <span className="font-semibold text-zinc-500">Practice</span>
+              <span className="font-semibold text-app-muted">Practice</span>
               <span>{legendChip(PRACTICE_TONE.A, 'A')} Absent</span>
               <span>{legendChip(PRACTICE_TONE.K, 'K')} Kids TK</span>
               <span>{legendChip(PRACTICE_TONE.D, 'D')} District TK</span>
@@ -723,67 +723,100 @@ export default function LnatkApp() {
               <span>{legendChip(PRACTICE_TONE.NP, 'N')} No Practice</span>
               <span>{legendChip(PRACTICE_TONE.N, 'N')} No Attendance</span>
             </div>
-            <p className="text-zinc-500">Each column locks when its entry window ends. The batch roster (coordinators) only opens while TG or an SPBB day is live. A green dot on a column means it is open for entries. Closed columns are locked; ask an officer to change them.</p>
+            <p className="text-app-muted">Each column locks when its entry window ends. The batch roster (coordinators) only opens while TG or an SPBB day is live. A green dot on a column means it is open for entries. Closed columns are locked; ask an officer to change them.</p>
           </div>
         </details>
       </div>
       {/* Two-pane attendance grid */}
-      <div className="h-[calc(100dvh-64px)] overflow-y-auto">
+      <div className="h-[calc(100dvh-64px)] overflow-y-auto bg-surface">
         <div className="flex">
           {/* Left pane: names */}
           <div
-            className="duty-names-pane w-32 shrink-0 border-r border-zinc-200 dark:border-obsidian-800 overflow-x-auto overscroll-x-contain"
+            className="duty-names-pane w-32 shrink-0 border-r border-app-strong shadow-[3px_0_10px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_12px_-2px_rgba(0,0,0,0.5)] z-20 overflow-x-auto overscroll-x-contain"
             style={{ scrollbarWidth: 'none' } as React.CSSProperties}
           >
             <style>{`.duty-names-pane::-webkit-scrollbar { display: none; }`}</style>
-            <div className={`sticky top-0 z-10 h-14 flex items-center px-2 font-semibold text-xs text-zinc-900 dark:text-zinc-100 ${headerBg}`}>
+            <div className="sticky top-0 z-10 h-14 flex items-center px-2.5 font-semibold text-xs text-app bg-surface-2 border-b border-app-strong">
               Name
             </div>
-            {sorted.map((m, idx) => (
-              <div key={m.id} className="h-11 flex items-center px-2 whitespace-nowrap text-xs font-medium text-zinc-900 dark:text-zinc-100">
-                <span className="mr-1.5 font-mono text-[10px] text-zinc-400 tabular-nums">{idx + 1}</span>
-                <span title={m.fullName}>{m.fullName}</span>
-              </div>
-            ))}
+            {sorted.map((m, idx) => {
+              const isHovered = hoveredDutyRow === idx;
+              const isStriped = idx % 2 === 1;
+              return (
+                <div
+                  key={m.id}
+                  className={`h-11 flex items-center px-2 whitespace-nowrap text-xs font-medium text-app border-b border-app transition-colors ${
+                    isHovered ? '!bg-surface-2' : isStriped ? 'bg-surface-2-subtle' : 'bg-surface'
+                  }`}
+                  onMouseEnter={() => setHoveredDutyRow(idx)}
+                  onMouseLeave={() => setHoveredDutyRow(null)}
+                  onTouchStart={() => setHoveredDutyRow(idx)}
+                  onTouchEnd={() => setHoveredDutyRow(null)}
+                >
+                  <span className="pl-1.5 pr-2 font-mono text-[10px] text-app-muted tabular-nums shrink-0">{idx + 1}</span>
+                  <span title={m.fullName} className="truncate">{m.fullName}</span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Right pane: session cells */}
           <div className="flex-1 overflow-x-auto overscroll-x-contain">
-            {/* Header row */}
-            <div className={`sticky top-0 z-10 h-14 flex items-end ${headerBg}`}>
+            {/* Header row - 2 rows: Top for week spanning, Bottom for session headers */}
+            <div className="sticky top-0 z-10 h-14 flex bg-surface-2 border-b border-app-strong">
               {visibleWeeks.map((w) => {
                 const wSessions = sessions.filter((s) => s.weekNum === w);
                 return (
-                  <React.Fragment key={w}>
-                    <div className="sticky left-0 z-10 flex items-end">
-                      <div className={`px-2 py-1 font-mono text-[10px] font-semibold tracking-wider text-zinc-700 dark:text-zinc-300 whitespace-nowrap ${headerBg}`}>
+                  <div key={w} className="flex flex-col border-r border-app-strong shrink-0">
+                    {/* Top row: Week label spanning all columns of that week */}
+                    <div className="h-6 px-2 flex items-center border-b border-app bg-surface-2 overflow-hidden">
+                      <span className="sticky left-0 font-mono text-[10px] font-semibold tracking-wider text-app whitespace-nowrap">
                         {weekLabel(w)}
-                      </div>
+                      </span>
                     </div>
-                    <div className="flex">
+                    {/* Bottom row: individual column headers */}
+                    <div className="h-8 flex bg-surface-2">
                       {wSessions.map((s) => (
-                        <div key={s.id} className="w-11 min-w-[2.75rem] text-center font-mono leading-tight py-1 px-0.5">
-                          <div className={`font-semibold text-[11px] ${s.type === 'TG' ? 'text-brand-700 dark:text-brand-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                        <div
+                          key={s.id}
+                          className={`${CELL_WIDTH} border-r border-app text-center font-mono leading-tight py-1 px-0.5 flex flex-col justify-center`}
+                        >
+                          <div className={`font-semibold text-[11px] ${s.type === 'TG' ? 'text-brand-700 dark:text-brand-400' : 'text-app'}`}>
                             {s.shortLabel}
                           </div>
-                          <div className="text-[9px] text-zinc-400 font-normal">{s.date.slice(5)}
+                          <div className="text-[9px] text-app-muted font-normal">
+                            {s.date.slice(5)}
                             {s.statusWindow !== 'closed' && (
                               <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 align-middle" title="Open for entries" />
                             )}
                           </div>
                         </div>
                       ))}
+                      <div className={`${CELL_WIDTH} text-center font-mono py-1 px-0.5 flex items-center justify-center`}>
+                        <span className="text-[10px] font-semibold text-app-muted">Week {w}</span>
+                      </div>
                     </div>
-                  </React.Fragment>
+                  </div>
                 );
               })}
             </div>
 
             {/* Body rows */}
-            {sorted.map((m) => {
+            {sorted.map((m, idx) => {
               const rollup = computeMemberRollup(m.id);
+              const isHovered = hoveredDutyRow === idx;
+              const isStriped = idx % 2 === 1;
               return (
-                <div key={m.id} className="h-11 flex items-center">
+                <div
+                  key={m.id}
+                  className={`h-11 flex border-b border-app transition-colors ${
+                    isHovered ? '!bg-surface-2' : isStriped ? 'bg-surface-2-subtle' : 'bg-surface'
+                  }`}
+                  onMouseEnter={() => setHoveredDutyRow(idx)}
+                  onMouseLeave={() => setHoveredDutyRow(null)}
+                  onTouchStart={() => setHoveredDutyRow(idx)}
+                  onTouchEnd={() => setHoveredDutyRow(null)}
+                >
                   {visibleWeeks.map((w) => {
                     const wSessions = sessions.filter((s) => s.weekNum === w);
                     const wkBest = rollup.weekMarkers[w];
@@ -792,45 +825,56 @@ export default function LnatkApp() {
                         ? 'text-emerald-700 dark:text-emerald-300 font-bold'
                         : wkBest === 'D'
                         ? 'text-amber-600 dark:text-amber-400 font-semibold'
-                        : 'text-zinc-400 dark:text-zinc-600';
+                        : 'text-app-muted';
 
                     return (
-                      <React.Fragment key={w}>
+                      <div key={w} className="flex border-r border-app-strong shrink-0">
                         {wSessions.map((s) => {
                           const locked = sourceRole !== 'officer' && s.statusWindow === 'closed';
+                          const isFuture = s.statusWindow === 'closed' && s.date > todayStr();
                           const lg = logs[`${m.id}_${s.id}`] ?? { status: 'N' as AttendanceStatus };
                           const tone = (s.type === 'Practice' ? PRACTICE_TONE : CELL_TONE)[lg.status] ?? CELL_TONE.N;
+
                           return (
-                            <div key={s.id} className="w-11 min-w-[2.75rem] flex items-center justify-center p-0.5">
-                              <div className={`relative inline-flex items-center justify-center w-10 h-10 sm:h-8 rounded-md font-mono font-semibold text-sm sm:text-xs focus-within:ring-2 focus-within:ring-brand-500 ${tone} ${locked ? 'opacity-50' : ''}`}>
-                                <span className="pointer-events-none">{statusShort(lg.status)}</span>
-                                <select
-                                  aria-label={`${m.fullName} ${s.label}`}
-                                  value={lg.status}
-                                  onChange={(e) =>
-                                    handleCellChange(m.id, s.id, e.target.value as AttendanceStatus, sourceRole)
-                                  }
-                                  disabled={locked}
-                                  className={`absolute inset-0 w-full h-full opacity-0 ${locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            <div key={s.id} className={`${CELL_WIDTH} border-r border-app flex items-center justify-center p-0.5`}>
+                              {isFuture && sourceRole !== 'officer' ? (
+                                <div
+                                  className="w-10 h-10 sm:h-8 rounded-md font-mono text-xs flex items-center justify-center border border-dashed border-app-strong text-app-muted opacity-40 cursor-not-allowed"
+                                  title="Future session not open yet"
                                 >
-                                  {s.allowed.map((st) => (
-                                    <option
-                                      key={st}
-                                      value={st}
-                                      className="bg-white dark:bg-obsidian-900 text-zinc-900 dark:text-white"
-                                    >
-                                      {statusLabel(st, s.type)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
+                                  -
+                                </div>
+                              ) : (
+                                <div className={`relative inline-flex items-center justify-center w-10 h-10 sm:h-8 rounded-md font-mono font-semibold text-sm sm:text-xs focus-within:ring-2 focus-within:ring-brand-500 ${tone} ${locked ? 'opacity-50' : ''}`}>
+                                  <span className="pointer-events-none">{statusShort(lg.status)}</span>
+                                  <select
+                                    aria-label={`${m.fullName} ${s.label}`}
+                                    value={lg.status}
+                                    onChange={(e) =>
+                                      handleCellChange(m.id, s.id, e.target.value as AttendanceStatus, sourceRole)
+                                    }
+                                    disabled={locked}
+                                    className={`absolute inset-0 w-full h-full opacity-0 ${locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                  >
+                                    {s.allowed.map((st) => (
+                                      <option
+                                        key={st}
+                                        value={st}
+                                        className="bg-surface text-app"
+                                      >
+                                        {statusLabel(st, s.type)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
-                        <div className={`w-11 min-w-[2.75rem] flex items-center justify-center bg-zinc-50 dark:bg-obsidian-900 font-mono text-xs ${wkDot}`}>
+                        <div className={`${CELL_WIDTH} flex items-center justify-center font-mono text-xs ${wkDot}`}>
                           {wkBest}
                         </div>
-                      </React.Fragment>
+                      </div>
                     );
                   })}
                 </div>
@@ -848,7 +892,7 @@ export default function LnatkApp() {
 
   if (isSupabaseConfigured && (dataLoading || loadError || locales.length === 0)) {
     return (
-      <div className="h-full flex flex-col items-center justify-center gap-3 p-6 text-center bg-white dark:bg-obsidian-950 text-zinc-900 dark:text-zinc-100">
+      <div className="h-full flex flex-col items-center justify-center gap-3 p-6 text-center bg-page text-app">
         <div className="font-bold tracking-widest text-sm">LNATK ATTENDANCE PLATFORM</div>
         {loadError ? (
           <>
@@ -861,14 +905,14 @@ export default function LnatkApp() {
             </button>
           </>
         ) : (
-          <p className="text-xs text-zinc-500">{dataLoading ? 'Loading…' : 'No locales found. Did you run the SQL migrations?'}</p>
+          <p className="text-xs text-app-muted">{dataLoading ? 'Loading…' : 'No locales found. Did you run the SQL migrations?'}</p>
         )}
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-hidden bg-white dark:bg-obsidian-950 text-zinc-900 dark:text-zinc-100 flex select-none">
+    <div className="h-full overflow-hidden bg-page text-app flex select-none">
       {/* Left Sidebar (Hidden on Landing Log-In View) */}
       {role === 'officer' && (
         <>
@@ -878,21 +922,21 @@ export default function LnatkApp() {
         <aside
           className={`${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full md:hidden'
-          } fixed md:static inset-y-0 left-0 z-40 w-64 shrink-0 bg-zinc-50 dark:bg-obsidian-900 border-r border-zinc-200 dark:border-obsidian-800 flex flex-col justify-between transition-transform`}
+          } fixed md:static inset-y-0 left-0 z-40 w-64 shrink-0 bg-surface border-r border-app-strong flex flex-col justify-between transition-transform`}
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <div className="h-14 px-4 border-b border-zinc-200 dark:border-obsidian-800 flex items-center justify-between">
+            <div className="h-14 px-4 border-b border-app-strong flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-brand-800 text-white flex items-center justify-center font-mono font-bold text-xs">
                   TK
                 </div>
-                <span className="font-semibold text-sm tracking-tight">LNATK District</span>
+                <span className="font-semibold text-sm tracking-tight text-app">LNATK District</span>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
                 aria-label="Hide menu"
                 title="Hide menu"
-                className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-200/70 dark:hover:bg-obsidian-800"
+                className="p-2 rounded-lg text-app-muted hover:text-app hover:bg-surface-2 transition-colors"
               >
                 <span className="md:hidden"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></span>
                 <span className="hidden md:inline"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="m16 9-3 3 3 3" /></svg></span>
@@ -903,7 +947,7 @@ export default function LnatkApp() {
             {role === 'officer' && (
             <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
               <div className="space-y-1">
-                <div className="px-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                <div className="px-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-app-muted">
                   Officer Modules
                 </div>
                 {[
@@ -926,7 +970,7 @@ export default function LnatkApp() {
                     className={`w-full px-2.5 py-2 rounded-lg text-xs font-medium text-left transition-colors ${
                       role === 'officer' && officerTab === t.id
                         ? 'bg-brand-800 text-white font-semibold'
-                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-obsidian-850'
+                        : 'text-app-muted hover:text-app hover:bg-surface-2'
                     }`}
                   >
                     <span className="flex items-center justify-between">
@@ -939,13 +983,13 @@ export default function LnatkApp() {
                 ))}
               </div>
 
-              <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-obsidian-800">
-                <div className="px-2 text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+              <div className="space-y-2 pt-2 border-t border-app">
+                <div className="px-2 text-[10px] font-mono uppercase tracking-wider text-app-muted">
                   18 Locales (3 Cities)
                 </div>
                 {(['Santa Rosa', 'Biñan', 'San Pedro'] as CityName[]).map((city) => (
                   <div key={city} className="space-y-0.5">
-                    <div className="px-2 py-0.5 text-[10px] font-semibold text-zinc-400">{city}</div>
+                    <div className="px-2 py-0.5 text-[10px] font-semibold text-app-muted">{city}</div>
                     {locales
                       .filter((l) => l.city === city)
                       .map((l) => (
@@ -956,10 +1000,10 @@ export default function LnatkApp() {
                             setSelectedLocaleId(l.id);
                             closeSidebarOnMobile();
                           }}
-                          className={`w-full px-2.5 py-1.5 rounded-md text-xs flex items-center justify-between ${
+                          className={`w-full px-2.5 py-1.5 rounded-md text-xs flex items-center justify-between transition-colors ${
                             selectedLocaleId === l.id
-                              ? 'bg-brand-800/10 dark:bg-brand-500/15 text-brand-800 dark:text-brand-300 font-semibold'
-                              : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-obsidian-850'
+                              ? 'bg-brand-800/10 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-semibold'
+                              : 'text-app-muted hover:text-app hover:bg-surface-2'
                           }`}
                         >
                           <span className="truncate">{l.name}</span>
@@ -978,7 +1022,7 @@ export default function LnatkApp() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <header className="h-14 shrink-0 border-b border-zinc-200 dark:border-obsidian-800 px-3 sm:px-6 flex items-center justify-between gap-2">
+        <header className="h-14 shrink-0 bg-surface border-b border-app-strong px-3 sm:px-6 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm min-w-0">
             {role === 'officer' && (
               <button
@@ -986,7 +1030,7 @@ export default function LnatkApp() {
                 aria-label={sidebarOpen ? 'Hide menu' : 'Show menu'}
                 aria-expanded={sidebarOpen}
                 title="Show menu"
-                className={`p-2 rounded-lg border border-zinc-200 dark:border-obsidian-800 hover:bg-zinc-100 dark:hover:bg-obsidian-900 ${sidebarOpen ? 'md:hidden' : ''}`}
+                className={`p-2 rounded-lg border border-app bg-surface-2 hover:bg-surface text-app transition-colors ${sidebarOpen ? 'md:hidden' : ''}`}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="m14 9 3 3-3 3" /></svg>
               </button>
@@ -994,15 +1038,15 @@ export default function LnatkApp() {
             {role === 'landing' ? (
               <span className="font-bold tracking-widest text-xs sm:text-sm">LNATK ATTENDANCE PLATFORM</span>
             ) : role === 'officer' ? (
-              <span className="font-semibold truncate">
+              <span className="font-semibold truncate text-app">
                 {OFFICER_TAB_LABELS[officerTab]}
                 {(officerTab === 'grid' || officerTab === 'admin') && ` — ${currentLocale.name}`}
               </span>
             ) : (
               <>
-                <span className="text-zinc-400 font-medium hidden sm:inline">{currentLocale.city}</span>
-                <span className="text-zinc-300 dark:text-zinc-700 hidden sm:inline">/</span>
-                <span className="font-semibold truncate">{currentLocale.name}</span>
+                <span className="text-app-muted font-medium hidden sm:inline">{currentLocale.city}</span>
+                <span className="text-app-muted/60 hidden sm:inline">/</span>
+                <span className="font-semibold truncate text-app">{currentLocale.name}</span>
               </>
             )}
           </div>
@@ -1012,12 +1056,12 @@ export default function LnatkApp() {
                 type="month"
                 value={reportMonth}
                 onChange={(e) => e.target.value && setReportMonth(e.target.value)}
-                className="h-10 px-2 py-1 w-[8.5rem] rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-transparent text-xs [color-scheme:light] dark:[color-scheme:dark]"
+                className="h-10 px-2 py-1 w-[8.5rem] rounded-lg border border-app bg-surface-2 text-xs text-app [color-scheme:light] dark:[color-scheme:dark]"
               />
             )}
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-obsidian-800 text-xs font-medium"
+              className="px-2.5 py-1 rounded-lg border border-app bg-surface-2 hover:bg-surface text-xs font-medium text-app transition-colors"
             >
               {darkMode ? 'Light' : 'Dark'}
             </button>
@@ -1035,7 +1079,7 @@ export default function LnatkApp() {
                   setLoginStep('stack');
                   setRole('landing');
                 }}
-                className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-obsidian-800 text-xs font-medium"
+                className="px-2.5 py-1 rounded-lg border border-app bg-surface-2 hover:bg-surface text-xs font-medium text-app transition-colors"
               >
                 Log Out
               </button>
@@ -1043,7 +1087,7 @@ export default function LnatkApp() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 bg-page">
           {/* VIEW 1: CENTERED LOG-IN SCREEN */}
           {role === 'landing' && (
             <section className="min-h-[calc(100vh-6.5rem)] flex flex-col items-center justify-center">
@@ -1053,37 +1097,37 @@ export default function LnatkApp() {
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-brand-800 text-white font-mono font-bold text-sm">
                     TK
                   </div>
-                  <h1 className="text-xl font-bold tracking-widest uppercase">Log-In</h1>
-                  <p className="text-xs text-zinc-500">LNATK District Attendance Platform</p>
+                  <h1 className="text-xl font-bold tracking-widest uppercase text-app">Log-In</h1>
+                  <p className="text-xs text-app-muted">LNATK District Attendance Platform</p>
                 </div>
 
-                <div className="rounded-[28px] border-2 border-zinc-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-900 shadow-2xl overflow-hidden">
+                <div className="rounded-[28px] border border-app bg-surface shadow-2xl overflow-hidden">
                   {loginStep === 'stack' && (
-                    <div className="divide-y-2 divide-zinc-200 dark:divide-obsidian-800">
+                    <div className="divide-y divide-app">
                       <button
                         onClick={() => setLoginStep('tk')}
-                        className="w-full py-6 px-6 text-center hover:bg-brand-50/60 dark:hover:bg-brand-950/30 transition-colors"
+                        className="w-full py-6 px-6 text-center hover:bg-surface-2 transition-colors"
                       >
-                        <div className="text-lg font-semibold">Regular TK</div>
-                        <div className="text-[11px] text-zinc-400">
+                        <div className="text-lg font-semibold text-app">Regular TK</div>
+                        <div className="text-[11px] text-app-muted">
                           Select your city & locale · View & edit locale table
                         </div>
                       </button>
                       <button
                         onClick={() => setLoginStep('coordinator')}
-                        className="w-full py-6 px-6 text-center hover:bg-brand-50/60 dark:hover:bg-brand-950/30 transition-colors"
+                        className="w-full py-6 px-6 text-center hover:bg-surface-2 transition-colors"
                       >
-                        <div className="text-lg font-semibold">Coordinator</div>
-                        <div className="text-[11px] text-zinc-400">
+                        <div className="text-lg font-semibold text-app">Coordinator</div>
+                        <div className="text-[11px] text-app-muted">
                           Choose your locale + PIN · Submit TG roster & monthly report
                         </div>
                       </button>
                       <button
                         onClick={() => setLoginStep('officer')}
-                        className="w-full py-6 px-6 text-center hover:bg-brand-50/60 dark:hover:bg-brand-950/30 transition-colors"
+                        className="w-full py-6 px-6 text-center hover:bg-surface-2 transition-colors"
                       >
-                        <div className="text-lg font-semibold">Officer</div>
-                        <div className="text-[11px] text-zinc-400">
+                        <div className="text-lg font-semibold text-app">Officer</div>
+                        <div className="text-[11px] text-app-muted">
                           District login · Full access to all 18 locales
                         </div>
                       </button>
@@ -1093,14 +1137,14 @@ export default function LnatkApp() {
                   {loginStep === 'tk' && (
                     <div className="p-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <button onClick={() => setLoginStep('stack')} className="text-xs text-zinc-400">
+                        <button onClick={() => setLoginStep('stack')} className="text-xs text-app-muted hover:text-app">
                           ← Back
                         </button>
                         <span className="text-xs font-semibold uppercase text-brand-600">Regular TK</span>
                       </div>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium mb-1">Select City</label>
+                          <label className="block text-xs font-medium mb-1 text-app">Select City</label>
                           <select
                             value={selectedCity}
                             onChange={(e) => {
@@ -1109,7 +1153,7 @@ export default function LnatkApp() {
                               const first = locales.find((l) => l.city === city);
                               if (first) setSelectedLocaleId(first.id);
                             }}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-semibold"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-app bg-surface-2 text-xs font-semibold text-app"
                           >
                             <option value="Santa Rosa">Santa Rosa</option>
                             <option value="Biñan">Biñan</option>
@@ -1117,11 +1161,11 @@ export default function LnatkApp() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium mb-1">Select Locale</label>
+                          <label className="block text-xs font-medium mb-1 text-app">Select Locale</label>
                           <select
                             value={selectedLocaleId}
                             onChange={(e) => setSelectedLocaleId(Number(e.target.value))}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs font-semibold"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-app bg-surface-2 text-xs font-semibold text-app"
                           >
                             {cityLocales.map((l) => (
                               <option key={l.id} value={l.id}>
@@ -1143,18 +1187,18 @@ export default function LnatkApp() {
                   {loginStep === 'coordinator' && (
                     <div className="p-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <button onClick={() => setLoginStep('stack')} className="text-xs text-zinc-400">
+                        <button onClick={() => setLoginStep('stack')} className="text-xs text-app-muted hover:text-app">
                           ← Back
                         </button>
                         <span className="text-xs font-semibold uppercase text-brand-600">Coordinator</span>
                       </div>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium mb-1">Your Locale</label>
+                          <label className="block text-xs font-medium mb-1 text-app">Your Locale</label>
                           <select
                             value={coordLocaleId}
                             onChange={(e) => setCoordLocaleId(Number(e.target.value))}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-base sm:text-xs font-semibold"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-app bg-surface-2 text-base sm:text-xs font-semibold text-app"
                           >
                             {(['Santa Rosa', 'Biñan', 'San Pedro'] as CityName[]).map((city) => (
                               <optgroup key={city} label={city}>
@@ -1166,13 +1210,13 @@ export default function LnatkApp() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium mb-1">Coordinator PIN</label>
+                          <label className="block text-xs font-medium mb-1 text-app">Coordinator PIN</label>
                           <input
                             type="password"
                             inputMode="numeric"
                             value={coordPinInput}
                             onChange={(e) => setCoordPinInput(e.target.value)}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 font-mono text-base sm:text-xs"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-app bg-surface-2 font-mono text-base sm:text-xs text-app"
                           />
                         </div>
                       </div>
@@ -1206,7 +1250,7 @@ export default function LnatkApp() {
                   {loginStep === 'officer' && (
                     <div className="p-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <button onClick={() => setLoginStep('stack')} className="text-xs text-zinc-400">
+                        <button onClick={() => setLoginStep('stack')} className="text-xs text-app-muted hover:text-app">
                           ← Back
                         </button>
                         <span className="text-xs font-semibold uppercase text-brand-600">District Officer</span>
@@ -1217,14 +1261,14 @@ export default function LnatkApp() {
                           placeholder="Officer email"
                           value={officerEmail}
                           onChange={(e) => setOfficerEmail(e.target.value)}
-                          className="w-full px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs"
+                          className="w-full px-3.5 py-2 rounded-xl border border-app bg-surface-2 text-xs text-app"
                         />
                         <input
                           type="password"
                           placeholder="Password"
                           value={officerPassword}
                           onChange={(e) => setOfficerPassword(e.target.value)}
-                          className="w-full px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-xs"
+                          className="w-full px-3.5 py-2 rounded-xl border border-app bg-surface-2 text-xs text-app"
                         />
                       </div>
                       <button
@@ -1271,7 +1315,7 @@ export default function LnatkApp() {
                       const first = locales.find((l) => l.city === c);
                       if (first) setSelectedLocaleId(first.id);
                     }}
-                    className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs font-medium"
+                    className="px-3 py-1.5 rounded-lg border border-app bg-surface text-xs font-medium text-app"
                   >
                     <option value="Santa Rosa">Santa Rosa</option>
                     <option value="Biñan">Biñan</option>
@@ -1280,7 +1324,7 @@ export default function LnatkApp() {
                   <select
                     value={selectedLocaleId}
                     onChange={(e) => setSelectedLocaleId(Number(e.target.value))}
-                    className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs font-semibold"
+                    className="px-3 py-1.5 rounded-lg border border-app bg-surface text-xs font-semibold text-app"
                   >
                     {cityLocales.map((l) => (
                       <option key={l.id} value={l.id}>
@@ -1293,26 +1337,26 @@ export default function LnatkApp() {
                     placeholder="Find your name..."
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
-                    className="px-3 py-1.5 w-44 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs"
+                    className="px-3 py-1.5 w-44 rounded-lg border border-app bg-surface text-xs text-app placeholder:text-app-muted"
                   />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
-                  <div className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800">
+                  <div className="px-2.5 py-1 rounded-md bg-surface-2 border border-app">
                     3-4 Weeks Duty: <strong className="text-emerald-500">{locSummary.duty34}</strong>
                   </div>
-                  <div className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800">
+                  <div className="px-2.5 py-1 rounded-md bg-surface-2 border border-app">
                     1-2 Weeks Duty: <strong className="text-brand-400">{locSummary.duty12}</strong>
                   </div>
-                  <div className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-obsidian-900 border border-zinc-200 dark:border-obsidian-800">
+                  <div className="px-2.5 py-1 rounded-md bg-surface-2 border border-app">
                     No Duty: <strong className="text-rose-400">{locSummary.noDuty}</strong>
                   </div>
                 </div>
               </div>
 
-              <div className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden">
-                <div className="px-4 py-2.5 bg-zinc-50 dark:bg-obsidian-900 border-b border-zinc-200 dark:border-obsidian-800 flex items-center justify-between text-xs">
-                  <span className="font-semibold">
+              <div className="border border-app rounded-xl bg-surface overflow-hidden shadow-sm">
+                <div className="px-4 py-2.5 bg-surface-2 border-b border-app flex items-center justify-between text-xs">
+                  <span className="font-semibold text-app">
                     {currentLocale.city} — Locale of {currentLocale.name} Regular Duty Sheet
                   </span>
                   <span className="font-mono text-[11px] text-brand-700 dark:text-brand-300 bg-brand-500/10 px-2 py-0.5 rounded">
@@ -1326,13 +1370,13 @@ export default function LnatkApp() {
 
           {/* VIEW 3: COORDINATOR VIEW */}
           {role === 'coordinator' && (
-            <div className="flex gap-1.5 mb-4 p-1 rounded-xl bg-zinc-200/70 dark:bg-obsidian-900 w-fit">
+            <div className="flex gap-1.5 mb-4 p-1 rounded-xl bg-surface-2 border border-app w-fit">
               {([['duty', 'Duty Sheet'], ['report', 'Monthly Report']] as const).map(([id, lbl]) => (
                 <button
                   key={id}
                   onClick={() => setCoordTab(id)}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold ${
-                    coordTab === id ? 'bg-white dark:bg-obsidian-800 shadow-sm' : 'text-zinc-500'
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                    coordTab === id ? 'bg-surface text-app shadow-sm border border-app' : 'text-app-muted hover:text-app'
                   }`}
                 >
                   {lbl}
@@ -1353,16 +1397,16 @@ export default function LnatkApp() {
           )}
           {role === 'coordinator' && coordTab === 'duty' && (
             <section className="space-y-4">
-              <div className="max-w-xl mx-auto w-full border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 sm:p-5 space-y-4">
-                <div className="border-b border-zinc-100 dark:border-obsidian-800 pb-3">
-                  <h2 className="text-sm font-semibold">Batch {liveTg?.type === 'SPBB' ? 'SPBB' : 'TG'} Duty Roster</h2>
-                  <p className="text-xs text-zinc-500">
+              <div className="max-w-xl mx-auto w-full border border-app rounded-xl bg-surface p-4 sm:p-5 space-y-4 shadow-sm">
+                <div className="border-b border-app pb-3">
+                  <h2 className="text-sm font-semibold text-app">Batch {liveTg?.type === 'SPBB' ? 'SPBB' : 'TG'} Duty Roster</h2>
+                  <p className="text-xs text-app-muted">
                     Mark multiple members for the live {liveTg?.type === 'SPBB' ? 'SPBB day' : 'TG'} at once and submit to the locale table.
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 dark:border-obsidian-800 px-3.5 py-2.5 text-xs">
-                  <span className="text-zinc-500">Session</span>
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-app bg-surface-2 px-3.5 py-2.5 text-xs text-app">
+                  <span className="text-app-muted">Session</span>
                   {liveTg ? (
                     <span className="font-semibold flex items-center gap-1.5">
                       <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -1373,21 +1417,21 @@ export default function LnatkApp() {
                   )}
                 </div>
                 {!liveTg && (
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-app-muted">
                     This roster is only open while the TG or an SPBB day is live. Outside of that, use the duty sheet below or ask an officer.
                   </p>
                 )}
 
                 {liveTg && (
                   <>
-                <div className="divide-y divide-zinc-200 dark:divide-obsidian-800 rounded-lg border border-zinc-200 dark:border-obsidian-800 max-h-96 overflow-y-auto">
+                <div className="divide-y divide-app rounded-lg border border-app bg-surface max-h-96 overflow-y-auto">
                   {members
                     .filter((m) => m.localeId === currentLocale.id && !m.leftAt)
                     .map((m) => {
                       const cur = coordDraft[m.id] ?? logs[`${m.id}_${coordSessionId}`]?.status ?? 'N';
                       return (
-                        <div key={m.id} className="px-3.5 py-2.5 flex items-center justify-between text-xs">
-                          <span className="font-medium">{m.fullName}</span>
+                        <div key={m.id} className="px-3.5 py-2.5 flex items-center justify-between text-xs hover:bg-surface-2 transition-colors">
+                          <span className="font-medium text-app">{m.fullName}</span>
                           <div className="flex items-center gap-1">
                             {(['S', 'P', 'D', 'A'] as AttendanceStatus[]).filter((st) => liveTg?.allowed.includes(st)).map((st) => (
                               <button
@@ -1396,7 +1440,7 @@ export default function LnatkApp() {
                                 className={`w-7 h-7 rounded font-mono text-xs font-semibold border ${
                                   cur === st
                                     ? 'bg-brand-800 text-white border-brand-700'
-                                    : 'bg-zinc-50 dark:bg-obsidian-950 border-zinc-200 dark:border-obsidian-800'
+                                    : 'bg-surface-2 border-app text-app hover:bg-surface'
                                 }`}
                               >
                                 {st}
@@ -1418,9 +1462,9 @@ export default function LnatkApp() {
                 )}
               </div>
 
-              <div className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden">
-                <div className="px-4 py-3 bg-zinc-50 dark:bg-obsidian-900 border-b border-zinc-200 dark:border-obsidian-800 flex items-center justify-between text-xs">
-                  <span className="font-semibold">
+              <div className="border border-app rounded-xl bg-surface overflow-hidden shadow-sm">
+                <div className="px-4 py-3 bg-surface-2 border-b border-app flex items-center justify-between text-xs">
+                  <span className="font-semibold text-app">
                     {currentLocale.city} — Locale of {currentLocale.name} Regular Duty Sheet
                   </span>
                   <span className="font-mono text-[11px] text-brand-700 dark:text-brand-300 bg-brand-500/10 px-2 py-0.5 rounded">
@@ -1435,7 +1479,7 @@ export default function LnatkApp() {
           {/* VIEW 4: OFFICER WORKSPACE */}
           {role === 'officer' && officerTab === 'grid' && (
             <section className="space-y-4">
-              <div className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden">
+              <div className="border border-app rounded-xl bg-surface overflow-hidden shadow-sm">
                 {renderEditableDutyTable('officer')}
               </div>
             </section>
@@ -1444,12 +1488,12 @@ export default function LnatkApp() {
           {role === 'officer' && officerTab === 'dashboard' && (
             <section className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">All Locales — {reportMonthLabel}</h3>
+                <h3 className="text-sm font-semibold text-app">All Locales — {reportMonthLabel}</h3>
                 <div className="flex gap-2">
                   <button onClick={handleDownloadExcel} className="px-3 py-2 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold">
                     Download Excel
                   </button>
-                  <button onClick={handleDownloadPdf} className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 text-xs font-semibold">
+                  <button onClick={handleDownloadPdf} className="px-3 py-2 rounded-lg border border-app bg-surface-2 hover:bg-surface text-app text-xs font-semibold">
                     Download PDF
                   </button>
                 </div>
@@ -1457,13 +1501,13 @@ export default function LnatkApp() {
               {(['Santa Rosa', 'Biñan', 'San Pedro'] as CityName[]).map((city) => (
                 <div
                   key={city}
-                  className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 overflow-hidden"
+                  className="border border-app rounded-xl bg-surface overflow-hidden shadow-sm"
                 >
-                  <div className="px-4 py-3 bg-zinc-50 dark:bg-obsidian-950 border-b border-zinc-200 dark:border-obsidian-800 font-semibold text-sm">
+                  <div className="px-4 py-3 bg-surface-2 border-b border-app-strong font-semibold text-sm text-app">
                     {city}
                   </div>
-                  <table className="w-full text-left text-xs">
-                    <thead className="border-b border-zinc-200 dark:border-obsidian-800 text-zinc-400">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-surface-2 border-b border-app-strong text-app-muted">
                       <tr>
                         <th className="py-2 px-4">Locale</th>
                         <th className="py-2 px-3 text-right">3–4 Weeks</th>
@@ -1472,14 +1516,14 @@ export default function LnatkApp() {
                         <th className="py-2 px-4 text-right">Total</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-100 dark:divide-obsidian-800">
+                    <tbody className="divide-y divide-app">
                       {locales
                         .filter((l) => l.city === city)
-                        .map((loc) => {
+                        .map((loc, idx) => {
                           const s = computeLocaleSummary(loc.id);
                           return (
-                            <tr key={loc.id}>
-                              <td className="py-2.5 px-4 font-medium">{loc.name}</td>
+                            <tr key={loc.id} className={`transition-colors hover:bg-surface-2 ${idx % 2 === 1 ? 'bg-surface-2-subtle' : ''}`}>
+                              <td className="py-2.5 px-4 font-medium text-app">{loc.name}</td>
                               <td className="py-2.5 px-3 text-right font-mono text-emerald-500 font-semibold">
                                 {s.duty34}
                               </td>
@@ -1489,7 +1533,7 @@ export default function LnatkApp() {
                               <td className="py-2.5 px-3 text-right font-mono text-rose-400 font-semibold">
                                 {s.noDuty}
                               </td>
-                              <td className="py-2.5 px-4 text-right font-mono font-semibold">{s.total}</td>
+                              <td className="py-2.5 px-4 text-right font-mono font-semibold text-app">{s.total}</td>
                             </tr>
                           );
                         })}
@@ -1503,7 +1547,7 @@ export default function LnatkApp() {
           {role === 'officer' && officerTab === 'inbox' && (
             <section className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">Live Venue Board (Saturday TG — Per Locale)</h3>
+                <h3 className="text-sm font-semibold text-app">Live Venue Board (Saturday TG — Per Locale)</h3>
                 <div className="flex items-center gap-2">
                   <select
                     value={liveCityFilter}
@@ -1511,7 +1555,7 @@ export default function LnatkApp() {
                       setLiveCityFilter(e.target.value);
                       setLiveLocaleFilter('ALL');
                     }}
-                    className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-950 text-xs"
+                    className="px-2.5 py-1 rounded-lg border border-app bg-surface text-xs text-app"
                   >
                     <option value="ALL">All Cities (3)</option>
                     <option value="Santa Rosa">Santa Rosa (7)</option>
@@ -1521,7 +1565,7 @@ export default function LnatkApp() {
                   <select
                     value={liveLocaleFilter}
                     onChange={(e) => setLiveLocaleFilter(e.target.value)}
-                    className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-950 text-xs font-semibold"
+                    className="px-2.5 py-1 rounded-lg border border-app bg-surface text-xs font-semibold text-app"
                   >
                     <option value="ALL">All Locales (Per-Locale View)</option>
                     {locales
@@ -1547,19 +1591,19 @@ export default function LnatkApp() {
                     return (
                       <div
                         key={loc.id}
-                        className="rounded-xl border border-zinc-200 dark:border-obsidian-800 bg-white dark:bg-obsidian-900 overflow-hidden"
+                        className="rounded-xl border border-app bg-surface overflow-hidden shadow-sm"
                       >
-                        <div className="px-4 py-2.5 bg-zinc-50 dark:bg-obsidian-950 border-b border-zinc-200 dark:border-obsidian-800 flex items-center justify-between text-xs">
+                        <div className="px-4 py-2.5 bg-surface-2 border-b border-app flex items-center justify-between text-xs text-app">
                           <span className="font-semibold">
                             {loc.city} — {loc.name}
                           </span>
-                          <span className="font-mono text-[10px] text-zinc-400">{loc.code}</span>
+                          <span className="font-mono text-[10px] text-app-muted">{loc.code}</span>
                         </div>
-                        <div className="divide-y divide-zinc-100 dark:divide-obsidian-800">
-                          {locMembers.map((m) => {
+                        <div className="divide-y divide-app">
+                          {locMembers.map((m, mIdx) => {
                             const lg = logs[`${m.id}_${liveTgId}`] ?? { status: 'N', source: 'self' };
                             return (
-                              <div key={m.id} className="px-4 py-2 flex items-center justify-between text-xs">
+                              <div key={m.id} className={`px-4 py-2 flex items-center justify-between text-xs text-app ${mIdx % 2 === 1 ? 'bg-surface-2-subtle' : ''}`}>
                                 <span>{m.fullName}</span>
                                 <span className="font-mono font-bold">{lg.status}</span>
                               </div>

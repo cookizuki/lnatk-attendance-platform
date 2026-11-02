@@ -9,8 +9,8 @@ interface Props {
 }
 
 const input =
-  'px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-base sm:text-sm w-full';
-const label = 'block text-[11px] font-semibold text-zinc-500';
+  'px-3 py-2 rounded-lg border border-app bg-surface-2 text-app placeholder:text-app-muted text-base sm:text-sm w-full';
+const label = 'block text-[11px] font-semibold text-app-muted';
 const blank = { title: '', date: '', endDate: '', time: '', location: '', details: '' };
 
 export default function EventsManager({ events, onSave, onDelete }: Props) {
@@ -45,11 +45,11 @@ export default function EventsManager({ events, onSave, onDelete }: Props) {
     window.scrollTo?.({ top: 0, behavior: 'smooth' });
   };
 
-  const row = (e: EventItem, isPast: boolean) => (
-    <div key={e.id} className="px-4 py-3 flex items-center justify-between gap-2">
+  const row = (e: EventItem, isPast: boolean, idx: number) => (
+    <div key={e.id} className={`px-4 py-3 flex items-center justify-between gap-2 ${idx % 2 === 1 ? 'bg-surface-2-subtle' : ''} hover:bg-surface-2 transition-colors`}>
       <div className="min-w-0">
-        <div className="text-sm font-medium truncate">{e.title}</div>
-        <div className="text-[11px] text-zinc-500 truncate">
+        <div className="text-sm font-medium truncate text-app">{e.title}</div>
+        <div className="text-[11px] text-app-muted truncate">
           {[dateRange(e.date, e.endDate), formatTime(e.time), e.location].filter(Boolean).join(' · ')}
           {!isPast && ` · ${relativeLabel(e.date, e.endDate, today)}`}
         </div>
@@ -57,12 +57,12 @@ export default function EventsManager({ events, onSave, onDelete }: Props) {
       {confirm === e.id ? (
         <div className="flex gap-1.5 shrink-0">
           <button onClick={() => { onDelete(e.id); setConfirm(null); }} className="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold">Delete</button>
-          <button onClick={() => setConfirm(null)} className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 text-xs">Cancel</button>
+          <button onClick={() => setConfirm(null)} className="px-3 py-2 rounded-lg border border-app bg-surface-2 text-app text-xs hover:bg-surface">Cancel</button>
         </div>
       ) : (
         <div className="flex gap-1.5 shrink-0">
-          <button onClick={() => edit(e)} className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 text-xs font-semibold">Edit</button>
-          <button onClick={() => setConfirm(e.id)} className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 text-xs text-rose-500">Delete</button>
+          <button onClick={() => edit(e)} className="px-3 py-2 rounded-lg border border-app bg-surface-2 text-app text-xs font-semibold hover:bg-surface">Edit</button>
+          <button onClick={() => setConfirm(e.id)} className="px-3 py-2 rounded-lg border border-app bg-surface-2 text-xs text-rose-500 hover:bg-surface">Delete</button>
         </div>
       )}
     </div>
@@ -70,9 +70,9 @@ export default function EventsManager({ events, onSave, onDelete }: Props) {
 
   return (
     <section className="max-w-2xl mx-auto space-y-4 select-text">
-      <div className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 space-y-3">
-        <h3 className="text-sm font-semibold">{editId ? 'Edit event' : 'Add an upcoming event'}</h3>
-        <p className="text-[11px] text-zinc-500">Shown on the login page for everyone. It disappears by itself after its last day.</p>
+      <div className="border border-app rounded-xl bg-surface p-4 space-y-3 shadow-sm">
+        <h3 className="text-sm font-semibold text-app">{editId ? 'Edit event' : 'Add an upcoming event'}</h3>
+        <p className="text-[11px] text-app-muted">Shown on the login page for everyone. It disappears by itself after its last day.</p>
         <label className={label}>Title *
           <input className={`${input} mt-1`} value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. District Fellowship" />
         </label>
@@ -99,21 +99,21 @@ export default function EventsManager({ events, onSave, onDelete }: Props) {
             {editId ? 'Save changes' : 'Add event'}
           </button>
           {editId && (
-            <button onClick={() => { setEditId(null); setForm(blank); setError(''); }} className="px-4 rounded-xl border border-zinc-300 dark:border-obsidian-700 text-xs">Cancel</button>
+            <button onClick={() => { setEditId(null); setForm(blank); setError(''); }} className="px-4 rounded-xl border border-app bg-surface-2 text-app hover:bg-surface text-xs">Cancel</button>
           )}
         </div>
       </div>
 
-      <div className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 divide-y divide-zinc-100 dark:divide-obsidian-800">
-        <div className="px-4 py-2.5 text-xs font-semibold">Upcoming ({upcoming.length})</div>
-        {upcoming.length === 0 && <div className="p-4 text-xs text-zinc-400">Nothing scheduled.</div>}
-        {upcoming.map((e) => row(e, false))}
+      <div className="border border-app rounded-xl bg-surface divide-y divide-app shadow-sm overflow-hidden">
+        <div className="px-4 py-2.5 bg-surface-2 border-b border-app text-xs font-semibold text-app">Upcoming ({upcoming.length})</div>
+        {upcoming.length === 0 && <div className="p-4 text-xs text-app-muted">Nothing scheduled.</div>}
+        {upcoming.map((e, idx) => row(e, false, idx))}
       </div>
 
       {past.length > 0 && (
-        <details className="border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900">
-          <summary className="px-4 py-2.5 text-xs font-semibold cursor-pointer">Past events, hidden from the login page ({past.length})</summary>
-          <div className="divide-y divide-zinc-100 dark:divide-obsidian-800">{past.map((e) => row(e, true))}</div>
+        <details className="border border-app rounded-xl bg-surface shadow-sm overflow-hidden">
+          <summary className="px-4 py-2.5 bg-surface-2 border-b border-app text-xs font-semibold text-app cursor-pointer">Past events, hidden from the login page ({past.length})</summary>
+          <div className="divide-y divide-app">{past.map((e, idx) => row(e, true, idx))}</div>
         </details>
       )}
     </section>

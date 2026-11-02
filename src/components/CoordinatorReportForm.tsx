@@ -13,8 +13,8 @@ interface Props {
 }
 
 const input =
-  'w-full px-3 py-2.5 rounded-xl border border-zinc-300 dark:border-obsidian-700 bg-zinc-50 dark:bg-obsidian-950 text-base sm:text-sm';
-const label = 'block text-xs font-semibold mb-1';
+  'w-full px-3 py-2.5 rounded-xl border border-app bg-surface-2 text-app placeholder:text-app-muted text-base sm:text-sm';
+const label = 'block text-xs font-semibold mb-1 text-app';
 
 export default function CoordinatorReportForm({ locale, members, month, monthLabel, existing, onSubmit }: Props) {
   const [position, setPosition] = useState(existing?.position ?? '');
@@ -54,10 +54,10 @@ export default function CoordinatorReportForm({ locale, members, month, monthLab
   };
 
   return (
-    <div className="max-w-2xl mx-auto border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4 sm:p-6 space-y-5 select-text">
+    <div className="max-w-2xl mx-auto border border-app rounded-xl bg-surface p-4 sm:p-6 space-y-5 select-text shadow-sm">
       <div>
-        <h2 className="text-base font-semibold">Monthly Locale Report — {monthLabel}</h2>
-        <p className="text-xs text-zinc-500 mt-0.5">
+        <h2 className="text-base font-semibold text-app">Monthly Locale Report — {monthLabel}</h2>
+        <p className="text-xs text-app-muted mt-0.5">
           Reporting for <strong>{locale.name}</strong> ({locale.city}). Sent straight to the officers.
         </p>
         {existing && (
@@ -80,12 +80,12 @@ export default function CoordinatorReportForm({ locale, members, month, monthLab
 
       <div>
         <label className={label}>TK's Concerns (per TK) *</label>
-        <p className="text-[11px] text-zinc-500 mb-2">
+        <p className="text-[11px] text-app-muted mb-2">
           Alamin ang sitwasyon ng bawat TK. e.g. “B. Kim - nakakaduty naman po palagi at nakakaganap po ng tungkulin nang maayos”
         </p>
         <div className="space-y-2.5">
           {rows.map((r, i) => (
-            <div key={i} className="rounded-xl border border-zinc-200 dark:border-obsidian-800 p-2.5 space-y-2">
+            <div key={i} className="rounded-xl border border-app bg-surface p-2.5 space-y-2">
               <div className="flex gap-2">
                 <select className={input} value={r.memberId} onChange={(e) => setRow(i, { memberId: e.target.value })}>
                   <option value="">Select TK…</option>
@@ -95,7 +95,7 @@ export default function CoordinatorReportForm({ locale, members, month, monthLab
                 </select>
                 {rows.length > 1 && (
                   <button onClick={() => setRows((p) => p.filter((_, idx) => idx !== i))}
-                    className="px-3 rounded-xl border border-zinc-300 dark:border-obsidian-700 text-xs">✕</button>
+                    className="px-3 rounded-xl border border-app bg-surface-2 text-app hover:bg-surface text-xs">✕</button>
                 )}
               </div>
               <textarea className={input} rows={2} value={r.text} onChange={(e) => setRow(i, { text: e.target.value })}

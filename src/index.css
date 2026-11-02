@@ -2,6 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --surface-2-subtle: rgba(240, 242, 245, 0.6);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --text: #18181b;
+  --text-muted: #71717a;
+}
+
+html.dark, .dark {
+  --bg: #0b0b0f;
+  --surface: #121218;
+  --surface-2: #181820;
+  --surface-2-subtle: rgba(24, 24, 32, 0.4);
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #ececf1;
+  --text-muted: #9a9aa8;
+}
+
+@layer utilities {
+  .bg-page { background-color: var(--bg); }
+  .bg-surface { background-color: var(--surface); }
+  .bg-surface-2 { background-color: var(--surface-2); }
+  .bg-surface-2-subtle { background-color: var(--surface-2-subtle); }
+  .border-app { border-color: var(--border); }
+  .border-app-strong { border-color: var(--border-strong); }
+  .divide-app > :not([hidden]) ~ :not([hidden]) { border-color: var(--border); }
+  .text-app { color: var(--text); }
+  .text-app-muted { color: var(--text-muted); }
+}
+
 * {
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;

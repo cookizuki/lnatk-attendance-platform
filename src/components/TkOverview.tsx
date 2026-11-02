@@ -23,8 +23,8 @@ const BUCKETS = [
 type BucketKey = (typeof BUCKETS)[number]['key'];
 
 const select =
-  'px-3 py-2 rounded-lg border border-zinc-300 dark:border-obsidian-700 bg-white dark:bg-obsidian-900 text-base sm:text-xs';
-const card = 'border border-zinc-200 dark:border-obsidian-800 rounded-xl bg-white dark:bg-obsidian-900 p-4';
+  'px-3 py-2 rounded-lg border border-app bg-surface text-app text-base sm:text-xs';
+const card = 'border border-app rounded-xl bg-surface p-4 shadow-sm';
 
 function Donut({ counts, total }: { counts: Record<Status, number>; total: number }) {
   const R = 42;
@@ -44,8 +44,8 @@ function Donut({ counts, total }: { counts: Record<Status, number>; total: numbe
           offset += len;
           return el;
         })}
-      <text x="60" y="58" textAnchor="middle" className="fill-current" fontSize="22" fontWeight="700">{total}</text>
-      <text x="60" y="74" textAnchor="middle" className="fill-current" fontSize="9" opacity="0.6">TKs</text>
+      <text x="60" y="58" textAnchor="middle" className="fill-current text-app" fontSize="22" fontWeight="700">{total}</text>
+      <text x="60" y="74" textAnchor="middle" className="fill-current text-app-muted" fontSize="9" opacity="0.7">TKs</text>
     </svg>
   );
 }
@@ -54,7 +54,7 @@ function StackBar({ parts, max }: { parts: Array<{ label: string; color: string;
   const total = parts.reduce((a, p) => a + p.n, 0);
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-6 rounded-md bg-zinc-100 dark:bg-obsidian-800 overflow-hidden flex" style={{ maxWidth: '100%' }}>
+      <div className="flex-1 h-6 rounded-md bg-surface-2 border border-app overflow-hidden flex" style={{ maxWidth: '100%' }}>
         <div className="flex h-full" style={{ width: `${max ? (total / max) * 100 : 0}%` }}>
           {parts.map((p) =>
             p.n > 0 ? (
@@ -66,13 +66,13 @@ function StackBar({ parts, max }: { parts: Array<{ label: string; color: string;
           )}
         </div>
       </div>
-      <span className="w-8 text-right text-xs font-mono">{total}</span>
+      <span className="w-8 text-right text-xs font-mono text-app">{total}</span>
     </div>
   );
 }
 
 const Legend = ({ items }: { items: Array<{ label: string; color: string }> }) => (
-  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
+  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-app-muted">
     {items.map((i) => (
       <span key={i.label} className="inline-flex items-center gap-1.5">
         <span className="w-2.5 h-2.5 rounded-sm" style={{ background: i.color }} />{i.label}
@@ -92,14 +92,14 @@ const dirSort = (a: { city: string; locale: string; fullName: string }, b: { cit
 function DirectoryTable({ title, rows, emptyMsg }: { title: string; rows: Array<{ fullName: string; locale: string; city: string }>; emptyMsg: string }) {
   return (
     <div className={`${card} space-y-2`}>
-      <h4 className="text-xs font-semibold">{title} <span className="font-mono text-zinc-500">({rows.length})</span></h4>
+      <h4 className="text-xs font-semibold text-app">{title} <span className="font-mono text-app-muted">({rows.length})</span></h4>
       {rows.length === 0 ? (
-        <p className="text-xs text-zinc-400">{emptyMsg}</p>
+        <p className="text-xs text-app-muted">{emptyMsg}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-separate border-spacing-0">
             <thead>
-              <tr className="sticky top-0 z-10 bg-zinc-50 dark:bg-obsidian-900 text-zinc-500 dark:text-zinc-400">
+              <tr className="sticky top-0 z-10 bg-surface-2 border-b border-app-strong text-app-muted">
                 <th className="py-2 px-2 font-mono text-[10px] w-8">#</th>
                 <th className="py-2 px-2 font-semibold whitespace-nowrap">Name</th>
                 <th className="py-2 px-2 font-semibold whitespace-nowrap">Locale</th>
@@ -108,11 +108,11 @@ function DirectoryTable({ title, rows, emptyMsg }: { title: string; rows: Array<
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={`${r.fullName}-${r.locale}-${i}`} className="h-11 border-t border-zinc-100 dark:border-obsidian-800 hover:bg-zinc-50/80 dark:hover:bg-obsidian-900/40">
-                  <td className="px-2 font-mono text-[11px] text-zinc-400 tabular-nums">{i + 1}</td>
-                  <td className="px-2 whitespace-nowrap font-medium text-zinc-900 dark:text-zinc-100">{r.fullName}</td>
-                  <td className="px-2 whitespace-nowrap text-zinc-600 dark:text-zinc-300">{r.locale}</td>
-                  <td className="px-2 whitespace-nowrap text-zinc-600 dark:text-zinc-300">{r.city}</td>
+                <tr key={`${r.fullName}-${r.locale}-${i}`} className={`h-11 border-b border-app hover:bg-surface-2 transition-colors ${i % 2 === 1 ? 'bg-surface-2-subtle' : ''}`}>
+                  <td className="px-2 font-mono text-[11px] text-app-muted tabular-nums">{i + 1}</td>
+                  <td className="px-2 whitespace-nowrap font-medium text-app">{r.fullName}</td>
+                  <td className="px-2 whitespace-nowrap text-app-muted">{r.locale}</td>
+                  <td className="px-2 whitespace-nowrap text-app-muted">{r.city}</td>
                 </tr>
               ))}
             </tbody>
@@ -264,13 +264,13 @@ export default function TkOverview({ members, locales, rollup, monthLabel }: Pro
 
       {/* Directory section: District TK and Trainees */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Directory</h3>
+        <h3 className="text-sm font-semibold text-app">Directory</h3>
         <input
           type="text"
           placeholder="Search by name, locale, or city…"
           value={dirSearch}
           onChange={(e) => setDirSearch(e.target.value)}
-          className="w-full max-w-xs px-3 py-2 rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-zinc-50 dark:bg-obsidian-900 text-xs placeholder:text-zinc-400"
+          className="w-full max-w-xs px-3 py-2 rounded-lg border border-app bg-surface text-xs text-app placeholder:text-app-muted"
         />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <DirectoryTable title="District TK" rows={districtRows} emptyMsg="No district TKs yet" />
