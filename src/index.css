@@ -35,8 +35,7 @@ html.dark .sheet-table td {
 }
 
 .dark input[type="month"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  opacity: 0.9;
+  opacity: 1;
   cursor: pointer;
 }
 
