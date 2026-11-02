@@ -1012,7 +1012,7 @@ export default function LnatkApp() {
                 type="month"
                 value={reportMonth}
                 onChange={(e) => e.target.value && setReportMonth(e.target.value)}
-                className="px-2 py-1 w-[8.5rem] rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-transparent text-xs"
+                className="h-10 px-2 py-1 w-[8.5rem] rounded-lg border border-zinc-200 dark:border-obsidian-800 bg-transparent text-xs [color-scheme:light] dark:[color-scheme:dark]"
               />
             )}
             <button
