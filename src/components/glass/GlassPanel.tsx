@@ -49,7 +49,7 @@ export const GLASS_INPUT =
   'h-10 px-3.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] text-app text-sm placeholder:text-app-muted focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/60 focus:border-transparent transition-all';
 
 export const GLASS_SELECT =
-  'h-10 px-3.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-strong)] text-app text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/60 focus:border-transparent transition-all';
+  'h-10 px-3.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-strong)] text-app text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/60 focus:border-transparent transition-all cursor-pointer';
 
 export const GLASS_BTN =
   'h-10 px-4 rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] hover:bg-[var(--glass-strong)] active:scale-[0.98] text-app text-xs font-semibold tracking-wide transition-all inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm';

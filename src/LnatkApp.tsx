@@ -175,6 +175,7 @@ export default function LnatkApp() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
+    document.documentElement.classList.toggle('light', !darkMode);
     try {
       localStorage.setItem('lnatk_theme', darkMode ? 'dark' : 'light');
     } catch {

@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root, .light {
+  color-scheme: light;
   --bg: #eef0f7;
   --glass: rgba(255, 255, 255, 0.55);
   --glass-strong: rgba(255, 255, 255, 0.78);
@@ -26,6 +27,7 @@
 }
 
 html.dark, .dark {
+  color-scheme: dark;
   --bg: #0b0b12;
   --glass: rgba(255, 255, 255, 0.06);
   --glass-strong: rgba(255, 255, 255, 0.11);
@@ -195,6 +197,66 @@ html.dark body::before,
 .dark input[type="month"]::-webkit-calendar-picker-indicator {
   opacity: 1;
   cursor: pointer;
+}
+
+/* ==========================================================================
+   Native select & dropdown popup styling
+   ========================================================================== */
+
+select {
+  cursor: pointer;
+  color-scheme: light;
+}
+
+html.dark select,
+.dark select {
+  color-scheme: dark;
+}
+
+/* Opaque popup options and optgroups for light mode */
+select option,
+select optgroup,
+.light select option,
+.light select optgroup {
+  background-color: #ffffff;
+  color: #1b1b24;
+}
+
+/* Opaque popup options and optgroups for dark mode */
+.dark select option,
+.dark select optgroup,
+html.dark select option,
+html.dark select optgroup {
+  background-color: #1b1b25;
+  color: #f2f2f7;
+}
+
+/* Selected & hover state */
+select option:checked,
+select option:hover,
+.light select option:checked,
+.light select option:hover,
+.dark select option:checked,
+.dark select option:hover,
+html.dark select option:checked,
+html.dark select option:hover {
+  background-color: #6d3fe0;
+  color: #ffffff;
+}
+
+/* Optgroup labels */
+select optgroup,
+.light select optgroup {
+  color: #646476;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.dark select optgroup,
+html.dark select optgroup {
+  color: #a6a6b8;
+  font-weight: 600;
+  font-style: normal;
 }
 
 .sticky-col-1 {
