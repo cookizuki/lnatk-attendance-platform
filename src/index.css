@@ -173,6 +173,14 @@ html.dark body::before,
   }
 }
 
+/* Disables transitions and animations during theme switch to prevent glass blur repaint lag */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
 * {
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;

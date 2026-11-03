@@ -174,14 +174,27 @@ export default function LnatkApp() {
   const [officerBusy, setOfficerBusy] = useState(false);
 
   useEffect(() => {
+    // Sync initial theme once on mount
     document.documentElement.classList.toggle('dark', darkMode);
     document.documentElement.classList.toggle('light', !darkMode);
+  }, []);
+
+  const handleThemeChange = (next: boolean) => {
+    document.documentElement.classList.add('theme-switching');
+    document.documentElement.classList.toggle('dark', next);
+    document.documentElement.classList.toggle('light', !next);
     try {
-      localStorage.setItem('lnatk_theme', darkMode ? 'dark' : 'light');
+      localStorage.setItem('lnatk_theme', next ? 'dark' : 'light');
     } catch {
       /* ignore quota or privacy errors */
     }
-  }, [darkMode]);
+    setDarkMode(next);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.documentElement.classList.remove('theme-switching');
+      });
+    });
+  };
 
   const triggerToast = (msg: string) => {
     setToastMsg(msg);
@@ -1083,11 +1096,11 @@ export default function LnatkApp() {
                 className="h-10 px-3 w-[8.75rem] rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] text-xs text-app font-mono focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/60 [color-scheme:light] dark:[color-scheme:dark]"
               />
             )}
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="relative z-10 flex items-center gap-1.5 shrink-0">
               <Sun size={14} className="hidden sm:inline-block text-app-muted shrink-0" aria-hidden="true" />
               <SquishSwitch
                 checked={darkMode}
-                onChange={(next) => setDarkMode(next)}
+                onChange={handleThemeChange}
                 ariaLabel="Toggle dark mode"
                 width={54}
                 height={28}

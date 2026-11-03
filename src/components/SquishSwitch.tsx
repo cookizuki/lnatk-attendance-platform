@@ -89,7 +89,6 @@ const SquishSwitch: React.FC<SquishSwitchProps> = ({
   const grip = useRef<Grip | null>(null);
   const onRef = useRef(on);
   onRef.current = on;
-  const skipClick = useRef(false);
   const autoId = useId();
   const buttonId = id ?? autoId;
 
@@ -169,19 +168,15 @@ const SquishSwitch: React.FC<SquishSwitchProps> = ({
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
-    if (cancelled) commit(g.onAtPress);
-    else if (!g.moved) commit(!onRef.current);
-    skipClick.current = true;
-    setTimeout(() => {
-      skipClick.current = false;
-    }, 0);
+    if (cancelled) {
+      if (g.moved) commit(g.onAtPress);
+    } else if (!g.moved) {
+      commit(!onRef.current);
+    }
     setDragging(false);
   };
-  const click = () => {
-    if (skipClick.current) {
-      skipClick.current = false;
-      return;
-    }
+  const click = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (e.detail !== 0) return; // pointer taps are handled in pointerup
     if (!disabled) commit(!onRef.current);
   };
 
