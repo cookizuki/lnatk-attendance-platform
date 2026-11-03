@@ -61,6 +61,8 @@ import SpbbManager from './components/SpbbManager';
 import UpcomingEvents from './components/UpcomingEvents';
 import EventsManager from './components/EventsManager';
 import TkOverview from './components/TkOverview';
+import SquishSwitch from './components/SquishSwitch';
+import { Sun, Moon } from 'lucide-react';
 import { downloadExcel, printPdf, LocaleSummaryRow, MemberStatusRow } from './lib/exportReport';
 
 /** "Jero Belgica" -> "Belgica, Jero". Names already written "Surname, First" are kept as typed. */
@@ -108,7 +110,14 @@ const PRACTICE_TONE: Record<string, string> = {
 
 export default function LnatkApp() {
   const seed = useMemo(() => buildSeedData(), []);
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('lnatk_theme');
+      if (saved === 'dark') return true;
+      if (saved === 'light') return false;
+    }
+    return true;
+  });
   const [role, setRole] = useState<PortalRole>('landing');
   const [loginStep, setLoginStep] = useState<'stack' | 'tk' | 'coordinator' | 'officer'>('stack');
   const [officerTab, setOfficerTab] = useState<OfficerTab>('grid');
@@ -165,6 +174,11 @@ export default function LnatkApp() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
+    try {
+      localStorage.setItem('lnatk_theme', darkMode ? 'dark' : 'light');
+    } catch {
+      /* ignore quota or privacy errors */
+    }
   }, [darkMode]);
 
   const triggerToast = (msg: string) => {
@@ -1059,12 +1073,25 @@ export default function LnatkApp() {
                 className="h-10 px-2 py-1 w-[8.5rem] rounded-lg border border-app bg-surface-2 text-xs text-app [color-scheme:light] dark:[color-scheme:dark]"
               />
             )}
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="px-2.5 py-1 rounded-lg border border-app bg-surface-2 hover:bg-surface text-xs font-medium text-app transition-colors"
-            >
-              {darkMode ? 'Light' : 'Dark'}
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Sun size={14} className="hidden sm:inline-block text-app-muted shrink-0" aria-hidden="true" />
+              <SquishSwitch
+                checked={darkMode}
+                onChange={(next) => setDarkMode(next)}
+                ariaLabel="Toggle dark mode"
+                width={56}
+                height={28}
+                radius={14}
+                speed={55}
+                stretch={36}
+                trackColor="#d4d4d8"
+                trackOnColor="#3b2a7a"
+                thumbColor="#ffffff"
+                thumbOnColor="#c4b5fd"
+                colorDuration={320}
+              />
+              <Moon size={14} className="hidden sm:inline-block text-app-muted shrink-0" aria-hidden="true" />
+            </div>
             {role !== 'landing' && (
               <button
                 onClick={async () => {
@@ -1627,7 +1654,7 @@ export default function LnatkApp() {
           )}
 
           {role === 'officer' && officerTab === 'overview' && (
-            <TkOverview members={members} locales={locales} rollup={computeMemberRollup} monthLabel={reportMonthLabel} />
+            <TkOverview members={members} locales={locales} rollup={computeMemberRollup} monthLabel={reportMonthLabel} isDark={darkMode} />
           )}
 
           {role === 'officer' && officerTab === 'upcoming' && (
