@@ -3,37 +3,65 @@
 @tailwind utilities;
 
 :root {
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --surface-2: #f0f2f5;
-  --surface-2-subtle: rgba(240, 242, 245, 0.6);
-  --border: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.16);
-  --text: #18181b;
-  --text-muted: #71717a;
+  --bg: #f4f4f6;
+  --panel: #ffffff;
+  --band: #ececf0;
+  --stripe: #f7f7f9;
+  --line: rgba(0, 0, 0, 0.12);
+  --line-strong: rgba(0, 0, 0, 0.22);
+  --ink: #18181b;
+  --muted: #6b6b78;
+  --accent: #6d3fe0;
+
+  /* Aliases */
+  --surface: var(--panel);
+  --surface-2: var(--band);
+  --surface-2-subtle: var(--stripe);
+  --border: var(--line);
+  --border-strong: var(--line-strong);
+  --text: var(--ink);
+  --text-muted: var(--muted);
 }
 
 html.dark, .dark {
-  --bg: #0b0b0f;
-  --surface: #121218;
-  --surface-2: #181820;
-  --surface-2-subtle: rgba(24, 24, 32, 0.4);
-  --border: rgba(255, 255, 255, 0.10);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --text: #ececf1;
-  --text-muted: #9a9aa8;
+  --bg: #0a0a0d;
+  --panel: #101015;
+  --band: #16161c;
+  --stripe: #13131a;
+  --line: rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --ink: #e8e8ee;
+  --muted: #9a9aa8;
+  --accent: #8b5cf6;
+
+  /* Aliases */
+  --surface: var(--panel);
+  --surface-2: var(--band);
+  --surface-2-subtle: var(--stripe);
+  --border: var(--line);
+  --border-strong: var(--line-strong);
+  --text: var(--ink);
+  --text-muted: var(--muted);
 }
 
 @layer utilities {
   .bg-page { background-color: var(--bg); }
-  .bg-surface { background-color: var(--surface); }
-  .bg-surface-2 { background-color: var(--surface-2); }
-  .bg-surface-2-subtle { background-color: var(--surface-2-subtle); }
-  .border-app { border-color: var(--border); }
-  .border-app-strong { border-color: var(--border-strong); }
-  .divide-app > :not([hidden]) ~ :not([hidden]) { border-color: var(--border); }
-  .text-app { color: var(--text); }
-  .text-app-muted { color: var(--text-muted); }
+  .bg-panel { background-color: var(--panel); }
+  .bg-band { background-color: var(--band); }
+  .bg-stripe { background-color: var(--stripe); }
+  .bg-surface { background-color: var(--panel); }
+  .bg-surface-2 { background-color: var(--band); }
+  .bg-surface-2-subtle { background-color: var(--stripe); }
+  .border-line { border-color: var(--line); }
+  .border-line-strong { border-color: var(--line-strong); }
+  .border-app { border-color: var(--line); }
+  .border-app-strong { border-color: var(--line-strong); }
+  .divide-app > :not([hidden]) ~ :not([hidden]) { border-color: var(--line); }
+  .text-app { color: var(--ink); }
+  .text-app-muted { color: var(--muted); }
+  .text-ink { color: var(--ink); }
+  .text-muted { color: var(--muted); }
+  .text-accent { color: var(--accent); }
 }
 
 * {
