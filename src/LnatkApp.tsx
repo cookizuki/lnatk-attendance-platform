@@ -63,6 +63,7 @@ import EventsManager from './components/EventsManager';
 import TkOverview from './components/TkOverview';
 import SquishSwitch from './components/SquishSwitch';
 import { Sun, Moon } from 'lucide-react';
+import { GlassPanel, GLASS_INPUT, GLASS_SELECT, GLASS_BTN, GLASS_BTN_PRIMARY } from './components/glass/GlassPanel';
 import { downloadExcel, printPdf, LocaleSummaryRow, MemberStatusRow } from './lib/exportReport';
 
 /** "Jero Belgica" -> "Belgica, Jero". Names already written "Surname, First" are kept as typed. */
@@ -936,12 +937,12 @@ export default function LnatkApp() {
         <aside
           className={`${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full md:hidden'
-          } fixed md:static inset-y-0 left-0 z-40 w-64 shrink-0 bg-surface border-r border-app-strong flex flex-col justify-between transition-transform`}
+          } fixed md:static inset-y-0 left-0 z-40 w-64 shrink-0 glass-sidebar flex flex-col justify-between transition-transform`}
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <div className="h-14 px-4 border-b border-app-strong flex items-center justify-between">
+            <div className="h-14 px-4 border-b border-divider flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-brand-800 text-white flex items-center justify-center font-mono font-bold text-xs">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-light)] text-white flex items-center justify-center font-mono font-bold text-xs shadow-sm">
                   TK
                 </div>
                 <span className="font-semibold text-sm tracking-tight text-app">LNATK District</span>
@@ -950,7 +951,7 @@ export default function LnatkApp() {
                 onClick={() => setSidebarOpen(false)}
                 aria-label="Hide menu"
                 title="Hide menu"
-                className="p-2 rounded-lg text-app-muted hover:text-app hover:bg-surface-2 transition-colors"
+                className="p-2 rounded-xl text-app-muted hover:text-app hover:bg-[var(--glass)] transition-colors"
               >
                 <span className="md:hidden"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></span>
                 <span className="hidden md:inline"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="m16 9-3 3 3 3" /></svg></span>
@@ -961,7 +962,7 @@ export default function LnatkApp() {
             {role === 'officer' && (
             <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
               <div className="space-y-1">
-                <div className="px-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-app-muted">
+                <div className="px-3 pb-1 text-[10px] font-mono uppercase tracking-[0.08em] text-app-muted font-semibold">
                   Officer Modules
                 </div>
                 {[
@@ -973,57 +974,65 @@ export default function LnatkApp() {
                   { id: 'admin', label: 'Members' },
                   { id: 'events', label: 'SPBB Days' },
                   { id: 'inbox', label: 'Live Venue Board (Per Locale)' },
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setRole('officer');
-                      setOfficerTab(t.id as OfficerTab);
-                      closeSidebarOnMobile();
-                    }}
-                    className={`w-full px-2.5 py-2 rounded-lg text-xs font-medium text-left transition-colors ${
-                      role === 'officer' && officerTab === t.id
-                        ? 'bg-brand-800 text-white font-semibold'
-                        : 'text-app-muted hover:text-app hover:bg-surface-2'
-                    }`}
-                  >
-                    <span className="flex items-center justify-between">
-                      {t.label}
-                      {t.id === 'reports' && unreadReports > 0 && (
-                        <span className="ml-2 px-1.5 rounded-full bg-brand-500 text-white text-[10px] font-mono">{unreadReports}</span>
-                      )}
-                    </span>
-                  </button>
-                ))}
+                ].map((t) => {
+                  const active = role === 'officer' && officerTab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setRole('officer');
+                        setOfficerTab(t.id as OfficerTab);
+                        closeSidebarOnMobile();
+                      }}
+                      className={`w-full px-3 py-2 rounded-xl text-xs text-left transition-all ${
+                        active
+                          ? 'bg-[var(--accent)]/18 text-[var(--accent)] font-semibold border border-[var(--accent)]/30 shadow-sm'
+                          : 'text-app-muted hover:text-app hover:bg-[var(--glass)] font-medium border border-transparent'
+                      }`}
+                    >
+                      <span className="flex items-center justify-between">
+                        {t.label}
+                        {t.id === 'reports' && unreadReports > 0 && (
+                          <span className="ml-2 px-1.5 py-0.2 rounded-full bg-[var(--accent)] text-white text-[10px] font-mono">
+                            {unreadReports}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="space-y-2 pt-2 border-t border-app">
-                <div className="px-2 text-[10px] font-mono uppercase tracking-wider text-app-muted">
+              <div className="space-y-2 pt-3 border-t border-divider">
+                <div className="px-3 text-[10px] font-mono uppercase tracking-[0.08em] text-app-muted font-semibold">
                   18 Locales (3 Cities)
                 </div>
                 {(['Santa Rosa', 'Biñan', 'San Pedro'] as CityName[]).map((city) => (
                   <div key={city} className="space-y-0.5">
-                    <div className="px-2 py-0.5 text-[10px] font-semibold text-app-muted">{city}</div>
+                    <div className="px-3 py-0.5 text-[10px] font-semibold text-app-muted">{city}</div>
                     {locales
                       .filter((l) => l.city === city)
-                      .map((l) => (
-                        <button
-                          key={l.id}
-                          onClick={() => {
-                            setSelectedCity(l.city);
-                            setSelectedLocaleId(l.id);
-                            closeSidebarOnMobile();
-                          }}
-                          className={`w-full px-2.5 py-1.5 rounded-md text-xs flex items-center justify-between transition-colors ${
-                            selectedLocaleId === l.id
-                              ? 'bg-brand-800/10 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-semibold'
-                              : 'text-app-muted hover:text-app hover:bg-surface-2'
-                          }`}
-                        >
-                          <span className="truncate">{l.name}</span>
-                          <span className="font-mono text-[10px] opacity-60">{(l.code || '').split('-')[1]}</span>
-                        </button>
-                      ))}
+                      .map((l) => {
+                        const active = selectedLocaleId === l.id;
+                        return (
+                          <button
+                            key={l.id}
+                            onClick={() => {
+                              setSelectedCity(l.city);
+                              setSelectedLocaleId(l.id);
+                              closeSidebarOnMobile();
+                            }}
+                            className={`w-full px-3 py-1.5 rounded-xl text-xs flex items-center justify-between transition-all ${
+                              active
+                                ? 'bg-[var(--accent)]/18 text-[var(--accent)] font-semibold border border-[var(--accent)]/30'
+                                : 'text-app-muted hover:text-app hover:bg-[var(--glass)] border border-transparent'
+                            }`}
+                          >
+                            <span className="truncate">{l.name}</span>
+                            <span className="font-mono text-[10px] opacity-75 shrink-0">{(l.code || '').split('-')[1]}</span>
+                          </button>
+                        );
+                      })}
                   </div>
                 ))}
               </div>
@@ -1036,7 +1045,7 @@ export default function LnatkApp() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <header className="h-14 shrink-0 bg-surface border-b border-app-strong px-3 sm:px-6 flex items-center justify-between gap-2">
+        <header className="glass-nav sticky top-0 z-30 h-14 shrink-0 px-3 sm:px-6 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm min-w-0">
             {role === 'officer' && (
               <button
@@ -1044,7 +1053,7 @@ export default function LnatkApp() {
                 aria-label={sidebarOpen ? 'Hide menu' : 'Show menu'}
                 aria-expanded={sidebarOpen}
                 title="Show menu"
-                className={`p-2 rounded-lg border border-app bg-surface-2 hover:bg-surface text-app transition-colors ${sidebarOpen ? 'md:hidden' : ''}`}
+                className={`p-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] hover:bg-[var(--glass-strong)] text-app transition-all ${sidebarOpen ? 'md:hidden' : ''}`}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="m14 9 3 3-3 3" /></svg>
               </button>
@@ -1070,7 +1079,7 @@ export default function LnatkApp() {
                 type="month"
                 value={reportMonth}
                 onChange={(e) => e.target.value && setReportMonth(e.target.value)}
-                className="h-10 px-2 py-1 w-[8.5rem] rounded-lg border border-app bg-surface-2 text-xs text-app [color-scheme:light] dark:[color-scheme:dark]"
+                className="h-10 px-3 w-[8.75rem] rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] text-xs text-app font-mono focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/60 [color-scheme:light] dark:[color-scheme:dark]"
               />
             )}
             <div className="flex items-center gap-1.5 shrink-0">
@@ -1079,16 +1088,16 @@ export default function LnatkApp() {
                 checked={darkMode}
                 onChange={(next) => setDarkMode(next)}
                 ariaLabel="Toggle dark mode"
-                width={56}
+                width={54}
                 height={28}
-                radius={14}
+                radius={9999}
                 speed={55}
                 stretch={36}
-                trackColor="#d4d4d8"
-                trackOnColor="#3b2a7a"
+                trackColor={darkMode ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.12)'}
+                trackOnColor={darkMode ? '#8b5cf6' : '#6d3fe0'}
                 thumbColor="#ffffff"
-                thumbOnColor="#c4b5fd"
-                colorDuration={320}
+                thumbOnColor="#ffffff"
+                colorDuration={220}
               />
               <Moon size={14} className="hidden sm:inline-block text-app-muted shrink-0" aria-hidden="true" />
             </div>
@@ -1106,7 +1115,7 @@ export default function LnatkApp() {
                   setLoginStep('stack');
                   setRole('landing');
                 }}
-                className="px-2.5 py-1 rounded-lg border border-app bg-surface-2 hover:bg-surface text-xs font-medium text-app transition-colors"
+                className={GLASS_BTN}
               >
                 Log Out
               </button>
@@ -1114,7 +1123,7 @@ export default function LnatkApp() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6 bg-page">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 bg-transparent">
           {/* VIEW 1: CENTERED LOG-IN SCREEN */}
           {role === 'landing' && (
             <section className="min-h-[calc(100vh-6.5rem)] flex flex-col items-center justify-center">
