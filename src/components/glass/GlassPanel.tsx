@@ -56,3 +56,4 @@ export const GLASS_BTN =
 
 export const GLASS_BTN_PRIMARY =
   'h-10 px-4 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-light)] hover:opacity-95 active:scale-[0.98] text-white text-xs font-semibold tracking-wide transition-all inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-[0_4px_14px_-2px_rgba(139,92,246,0.45)]';
+
