@@ -76,6 +76,8 @@
   overflow: hidden;
   border-radius: var(--mb-radius);
   background: var(--mb-surface);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
   box-shadow: var(--mb-shadow);
   color: var(--mb-ink);
   text-decoration: none;
@@ -85,6 +87,13 @@
     rotateY(var(--mb-ry, 0deg)) scale(var(--mb-press, 1));
   user-select: none;
   -webkit-user-select: none;
+}
+
+@media (max-width: 640px) {
+  .magic-bento__card {
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
 }
 
 .magic-bento__card[data-clickable] {
