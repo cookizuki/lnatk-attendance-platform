@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { LocaleItem, MemberItem, TkCategory, TK_CATEGORY_LABELS } from '../types/lnatk';
+import { Panel, LEDGER_INPUT, LEDGER_SELECT, LEDGER_BTN, LEDGER_BTN_PRIMARY } from './ledger/LedgerComponents';
 
 interface Props {
   locale: LocaleItem;
@@ -10,10 +11,6 @@ interface Props {
   onRestore: (id: string) => void;
   onUpdate: (ids: string[], patch: { category?: TkCategory; onHold?: boolean; holdReason?: string }) => void;
 }
-
-const input =
-  'px-3 py-2 rounded-lg border border-app bg-surface-2 text-app text-base sm:text-sm placeholder:text-app-muted';
-const btn = 'px-3 py-2 rounded-lg border border-app bg-surface-2 hover:bg-surface text-app text-xs font-semibold transition-colors';
 
 export default function MemberManager({ locale, members, onAdd, onRename, onRemove, onRestore, onUpdate }: Props) {
   const [newName, setNewName] = useState('');
@@ -30,85 +27,178 @@ export default function MemberManager({ locale, members, onAdd, onRename, onRemo
 
   const commit = (m: MemberItem) => {
     const v = (edits[m.id] ?? m.fullName).trim();
-    setEdits((p) => { const n = { ...p }; delete n[m.id]; return n; });
+    setEdits((p) => {
+      const n = { ...p };
+      delete n[m.id];
+      return n;
+    });
     if (v && v !== m.fullName) onRename(m.id, v);
   };
 
   return (
     <section className="max-w-2xl mx-auto space-y-4 select-text">
-      <div className="border border-app rounded-xl bg-surface p-4 space-y-3 shadow-sm">
-        <h3 className="text-sm font-semibold text-app">Members of {locale.name} ({locale.city}) · {active.length}</h3>
-        <p className="text-[11px] text-app-muted">
-          Pick another locale from the sidebar to manage its members. Category and Hold are only used in the officer TK Overview; TKs and coordinators never see them.
+      <Panel
+        title={`MEMBERS OF ${locale.name.toUpperCase()} (${locale.city.toUpperCase()})`}
+        meta={`${active.length} ACTIVE`}
+        bodyClassName="p-3 sm:p-4 space-y-3"
+      >
+        <p className="text-[11px] font-mono text-app-muted">
+          Pick another locale from the sidebar to manage its members. Category and Hold are only used in the officer TK
+          Overview.
         </p>
-        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); onAdd(newName); setNewName(''); }}>
-          <input className={`${input} flex-1 min-w-0`} placeholder="Add a member (full name)" value={newName} onChange={(e) => setNewName(e.target.value)} />
-          <button type="submit" className="px-4 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold">Add</button>
+        <form
+          className="flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (newName.trim()) {
+              onAdd(newName.trim());
+              setNewName('');
+            }
+          }}
+        >
+          <input
+            className={`${LEDGER_INPUT} flex-1 min-w-0 font-sans text-sm`}
+            placeholder="Add a member (full name)"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          <button type="submit" className={LEDGER_BTN_PRIMARY}>
+            ADD
+          </button>
         </form>
-      </div>
+      </Panel>
 
       {sel.length > 0 && (
-        <div className="sticky top-0 z-10 border border-brand-500/40 rounded-xl bg-surface p-3 flex flex-wrap items-center gap-2 shadow-md">
-          <span className="text-xs font-semibold text-app">{sel.length} selected</span>
-          <select className={`${input} !py-1.5 !text-xs`} value="" onChange={(e) => e.target.value && onUpdate(sel, { category: e.target.value as TkCategory })}>
+        <div className="sticky top-0 z-10 border border-brand-500/50 rounded-[2px] bg-surface-2 p-2 flex flex-wrap items-center gap-2">
+          <span className="font-mono uppercase text-[11px] font-semibold text-app tabular-nums">
+            {sel.length} SELECTED
+          </span>
+          <select
+            className={LEDGER_SELECT}
+            value=""
+            onChange={(e) => e.target.value && onUpdate(sel, { category: e.target.value as TkCategory })}
+          >
             <option value="">Set category…</option>
-            {(Object.keys(TK_CATEGORY_LABELS) as TkCategory[]).map((c) => <option key={c} value={c}>{TK_CATEGORY_LABELS[c]}</option>)}
+            {(Object.keys(TK_CATEGORY_LABELS) as TkCategory[]).map((c) => (
+              <option key={c} value={c}>
+                {TK_CATEGORY_LABELS[c]}
+              </option>
+            ))}
           </select>
-          <button className={btn} onClick={() => onUpdate(sel, { onHold: true })}>Put on hold</button>
-          <button className={btn} onClick={() => onUpdate(sel, { onHold: false, holdReason: '' })}>Release hold</button>
-          <button className={`${btn} ml-auto`} onClick={() => setSelected([])}>Clear</button>
+          <button className={LEDGER_BTN} onClick={() => onUpdate(sel, { onHold: true })}>
+            PUT ON HOLD
+          </button>
+          <button className={LEDGER_BTN} onClick={() => onUpdate(sel, { onHold: false, holdReason: '' })}>
+            RELEASE HOLD
+          </button>
+          <button className={`${LEDGER_BTN} ml-auto`} onClick={() => setSelected([])}>
+            CLEAR
+          </button>
         </div>
       )}
 
-      <div className="border border-app rounded-xl bg-surface divide-y divide-app shadow-sm">
-        {active.length === 0 && <div className="p-4 text-xs text-app-muted">No members yet.</div>}
-        {active.map((m, idx) => (
-          <div key={m.id} className={`p-2.5 space-y-2 transition-colors hover:bg-surface-2 ${idx % 2 === 1 ? 'bg-surface-2-subtle' : ''}`}>
-            <div className="flex items-center gap-2">
-              <input type="checkbox" aria-label={`Select ${m.fullName}`} className="w-5 h-5 shrink-0" checked={sel.includes(m.id)} onChange={() => toggle(m.id)} />
-              <input className={`${input} flex-1 min-w-0`} value={edits[m.id] ?? m.fullName}
-                onChange={(e) => setEdits((p) => ({ ...p, [m.id]: e.target.value }))}
-                onBlur={() => commit(m)} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
-            </div>
-            <div className="flex flex-wrap items-center gap-2 pl-7">
-              <select className={`${input} !py-1.5 !text-xs`} value={m.category ?? 'locale'} aria-label="Category"
-                onChange={(e) => onUpdate([m.id], { category: e.target.value as TkCategory })}>
-                {(Object.keys(TK_CATEGORY_LABELS) as TkCategory[]).map((c) => <option key={c} value={c}>{TK_CATEGORY_LABELS[c]}</option>)}
-              </select>
-              <button
-                aria-pressed={!!m.onHold}
-                onClick={() => onUpdate([m.id], m.onHold ? { onHold: false, holdReason: '' } : { onHold: true })}
-                className={`${btn} ${m.onHold ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/50' : ''}`}
-              >
-                {m.onHold ? 'On hold · Release' : 'Put on hold'}
-              </button>
-              {confirmId === m.id ? (
-                <>
-                  <button onClick={() => { onRemove(m.id); setConfirmId(null); }} className="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold">Remove</button>
-                  <button onClick={() => setConfirmId(null)} className={btn}>Cancel</button>
-                </>
-              ) : (
-                <button onClick={() => setConfirmId(m.id)} className={`${btn} text-rose-500 ml-auto`}>Remove</button>
+      <Panel title={`ACTIVE MEMBERS (${active.length})`} bodyClassName="p-0">
+        <div className="divide-y divide-app">
+          {active.length === 0 && <div className="p-4 text-xs font-mono text-app-muted">No members yet.</div>}
+          {active.map((m, idx) => (
+            <div
+              key={m.id}
+              className={`p-2.5 space-y-2 transition-colors hover:bg-surface-2 ${
+                idx % 2 === 1 ? 'bg-surface-2-subtle' : ''
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  aria-label={`Select ${m.fullName}`}
+                  className="w-4 h-4 shrink-0 rounded-[2px] accent-brand-600"
+                  checked={sel.includes(m.id)}
+                  onChange={() => toggle(m.id)}
+                />
+                <input
+                  className={`${LEDGER_INPUT} flex-1 min-w-0 font-sans text-sm`}
+                  value={edits[m.id] ?? m.fullName}
+                  onChange={(e) => setEdits((p) => ({ ...p, [m.id]: e.target.value }))}
+                  onBlur={() => commit(m)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2 pl-6">
+                <select
+                  className={LEDGER_SELECT}
+                  value={m.category ?? 'locale'}
+                  aria-label="Category"
+                  onChange={(e) => onUpdate([m.id], { category: e.target.value as TkCategory })}
+                >
+                  {(Object.keys(TK_CATEGORY_LABELS) as TkCategory[]).map((c) => (
+                    <option key={c} value={c}>
+                      {TK_CATEGORY_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  aria-pressed={!!m.onHold}
+                  onClick={() => onUpdate([m.id], m.onHold ? { onHold: false, holdReason: '' } : { onHold: true })}
+                  className={`${LEDGER_BTN} ${
+                    m.onHold ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/50' : ''
+                  }`}
+                >
+                  {m.onHold ? 'ON HOLD · RELEASE' : 'PUT ON HOLD'}
+                </button>
+                {confirmId === m.id ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        onRemove(m.id);
+                        setConfirmId(null);
+                      }}
+                      className="h-9 sm:h-7 px-2.5 rounded-[2px] bg-rose-600 hover:bg-rose-500 text-white font-mono uppercase text-[11px] tracking-[0.06em] font-medium transition-colors"
+                    >
+                      REMOVE
+                    </button>
+                    <button onClick={() => setConfirmId(null)} className={LEDGER_BTN}>
+                      CANCEL
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={() => setConfirmId(m.id)} className={`${LEDGER_BTN} text-rose-500 ml-auto`}>
+                    REMOVE
+                  </button>
+                )}
+              </div>
+              {m.onHold && (
+                <input
+                  className={`${LEDGER_INPUT} w-full ml-6 max-w-[calc(100%-1.5rem)]`}
+                  placeholder="Reason for hold (optional)"
+                  value={reasons[m.id] ?? m.holdReason ?? ''}
+                  onChange={(e) => setReasons((p) => ({ ...p, [m.id]: e.target.value }))}
+                  onBlur={() =>
+                    reasons[m.id] !== undefined &&
+                    reasons[m.id] !== (m.holdReason ?? '') &&
+                    onUpdate([m.id], { holdReason: reasons[m.id] })
+                  }
+                />
               )}
             </div>
-            {m.onHold && (
-              <input className={`${input} !py-1.5 !text-xs w-full ml-7 max-w-[calc(100%-1.75rem)]`} placeholder="Reason for hold (optional)"
-                value={reasons[m.id] ?? m.holdReason ?? ''}
-                onChange={(e) => setReasons((p) => ({ ...p, [m.id]: e.target.value }))}
-                onBlur={() => reasons[m.id] !== undefined && reasons[m.id] !== (m.holdReason ?? '') && onUpdate([m.id], { holdReason: reasons[m.id] })} />
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </Panel>
 
       {removed.length > 0 && (
-        <details className="border border-app rounded-xl bg-surface shadow-sm">
-          <summary className="px-4 py-2.5 text-xs font-semibold text-app cursor-pointer">Removed members ({removed.length})</summary>
+        <details className="border border-app rounded-[2px] bg-surface overflow-hidden">
+          <summary className="h-8 px-3 bg-surface-2 border-b border-app-strong font-mono uppercase text-[11px] font-semibold tracking-[0.06em] text-app flex items-center cursor-pointer">
+            REMOVED MEMBERS ({removed.length})
+          </summary>
           <div className="divide-y divide-app">
             {removed.map((m) => (
-              <div key={m.id} className="px-4 py-2 flex items-center justify-between text-sm text-app">
+              <div key={m.id} className="h-11 sm:h-9 px-3 flex items-center justify-between text-xs sm:text-sm text-app">
                 <span className="text-app-muted">{m.fullName}</span>
-                <button onClick={() => onRestore(m.id)} className="text-xs font-semibold text-brand-700 dark:text-brand-300">Restore</button>
+                <button
+                  onClick={() => onRestore(m.id)}
+                  className="font-mono uppercase text-[11px] font-medium tracking-[0.06em] text-brand-500 hover:text-brand-400"
+                >
+                  RESTORE
+                </button>
               </div>
             ))}
           </div>
