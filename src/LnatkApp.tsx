@@ -691,10 +691,10 @@ export default function LnatkApp() {
 
     const visibleWeeks = weekView === 'all' || !weekNums.includes(weekView) ? weekNums : [weekView];
     const chip = (active: boolean) =>
-      `shrink-0 px-3 py-2 rounded-xl border text-left leading-tight transition-colors ${
+      `shrink-0 px-3.5 py-2 rounded-xl border text-left leading-tight transition-all cursor-pointer ${
         active
-          ? 'bg-brand-800 border-brand-800 text-white'
-          : 'border-app bg-surface-2 text-app-muted hover:text-app'
+          ? 'bg-gradient-to-r from-[var(--accent)] to-[var(--accent-light)] border-transparent text-white font-semibold shadow-sm'
+          : 'border-[var(--glass-border)] bg-[var(--glass)] text-app-muted hover:text-app hover:bg-[var(--glass-strong)]'
       }`;
     const legendChip = (cls: string, text: string) => (
       <span className={`inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded font-mono text-[11px] font-semibold ${cls}`}>{text}</span>
@@ -702,7 +702,7 @@ export default function LnatkApp() {
 
     return (
       <>
-      <div className="px-3 sm:px-4 py-3 space-y-2.5 border-b border-app bg-surface">
+      <div className="px-3 sm:px-4 py-3 space-y-2.5 border-b border-divider bg-transparent">
         <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Weeks">
           {weekNums.map((w) => (
             <button key={w} role="tab" aria-selected={weekView === w} onClick={() => setWeekView(w)} className={chip(weekView === w)}>
@@ -743,15 +743,15 @@ export default function LnatkApp() {
         </details>
       </div>
       {/* Two-pane attendance grid */}
-      <div className="h-[calc(100dvh-64px)] overflow-y-auto bg-surface">
+      <div className="h-[calc(100dvh-64px)] overflow-y-auto bg-transparent">
         <div className="flex">
           {/* Left pane: names */}
           <div
-            className="duty-names-pane w-32 shrink-0 border-r border-app-strong shadow-[3px_0_10px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_12px_-2px_rgba(0,0,0,0.5)] z-20 overflow-x-auto overscroll-x-contain"
+            className="duty-names-pane w-32 shrink-0 border-r border-divider-strong shadow-[4px_0_16px_-4px_rgba(0,0,0,0.35)] z-20 overflow-x-auto overscroll-x-contain"
             style={{ scrollbarWidth: 'none' } as React.CSSProperties}
           >
             <style>{`.duty-names-pane::-webkit-scrollbar { display: none; }`}</style>
-            <div className="sticky top-0 z-10 h-14 flex items-center px-2.5 font-semibold text-xs text-app bg-surface-2 border-b border-app-strong">
+            <div className="sticky top-0 z-10 h-14 flex items-center px-2.5 font-semibold text-xs text-app bg-[var(--glass-strong)] border-b border-divider-strong">
               Name
             </div>
             {sorted.map((m, idx) => {
@@ -760,8 +760,8 @@ export default function LnatkApp() {
               return (
                 <div
                   key={m.id}
-                  className={`h-11 flex items-center px-2 whitespace-nowrap text-xs font-medium text-app border-b border-app transition-colors ${
-                    isHovered ? '!bg-surface-2' : isStriped ? 'bg-surface-2-subtle' : 'bg-surface'
+                  className={`h-11 flex items-center px-2 whitespace-nowrap text-xs font-medium text-app border-b border-divider transition-colors ${
+                    isHovered ? '!bg-white/[0.08] dark:!bg-white/[0.08]' : isStriped ? 'bg-black/[0.025] dark:bg-white/[0.025]' : 'bg-transparent'
                   }`}
                   onMouseEnter={() => setHoveredDutyRow(idx)}
                   onMouseLeave={() => setHoveredDutyRow(null)}
@@ -778,25 +778,25 @@ export default function LnatkApp() {
           {/* Right pane: session cells */}
           <div className="flex-1 overflow-x-auto overscroll-x-contain">
             {/* Header row - 2 rows: Top for week spanning, Bottom for session headers */}
-            <div className="sticky top-0 z-10 h-14 flex bg-surface-2 border-b border-app-strong">
+            <div className="sticky top-0 z-10 h-14 flex bg-[var(--glass-strong)] border-b border-divider-strong">
               {visibleWeeks.map((w) => {
                 const wSessions = sessions.filter((s) => s.weekNum === w);
                 return (
-                  <div key={w} className="flex flex-col border-r border-app-strong shrink-0">
+                  <div key={w} className="flex flex-col border-r border-divider-strong shrink-0">
                     {/* Top row: Week label spanning all columns of that week */}
-                    <div className="h-6 px-2 flex items-center border-b border-app bg-surface-2 overflow-hidden">
+                    <div className="h-6 px-2 flex items-center border-b border-divider bg-[var(--glass-strong)] overflow-hidden">
                       <span className="sticky left-0 font-mono text-[10px] font-semibold tracking-wider text-app whitespace-nowrap">
                         {weekLabel(w)}
                       </span>
                     </div>
                     {/* Bottom row: individual column headers */}
-                    <div className="h-8 flex bg-surface-2">
+                    <div className="h-8 flex bg-[var(--glass-strong)]">
                       {wSessions.map((s) => (
                         <div
                           key={s.id}
-                          className={`${CELL_WIDTH} border-r border-app text-center font-mono leading-tight py-1 px-0.5 flex flex-col justify-center`}
+                          className={`${CELL_WIDTH} border-r border-divider text-center font-mono leading-tight py-1 px-0.5 flex flex-col justify-center`}
                         >
-                          <div className={`font-semibold text-[11px] ${s.type === 'TG' ? 'text-brand-700 dark:text-brand-400' : 'text-app'}`}>
+                          <div className={`font-semibold text-[11px] ${s.type === 'TG' ? 'text-[var(--accent)]' : 'text-app'}`}>
                             {s.shortLabel}
                           </div>
                           <div className="text-[9px] text-app-muted font-normal">
@@ -824,8 +824,8 @@ export default function LnatkApp() {
               return (
                 <div
                   key={m.id}
-                  className={`h-11 flex border-b border-app transition-colors ${
-                    isHovered ? '!bg-surface-2' : isStriped ? 'bg-surface-2-subtle' : 'bg-surface'
+                  className={`h-11 flex border-b border-divider transition-colors ${
+                    isHovered ? '!bg-white/[0.08] dark:!bg-white/[0.08]' : isStriped ? 'bg-black/[0.025] dark:bg-white/[0.025]' : 'bg-transparent'
                   }`}
                   onMouseEnter={() => setHoveredDutyRow(idx)}
                   onMouseLeave={() => setHoveredDutyRow(null)}
@@ -843,7 +843,7 @@ export default function LnatkApp() {
                         : 'text-app-muted';
 
                     return (
-                      <div key={w} className="flex border-r border-app-strong shrink-0">
+                      <div key={w} className="flex border-r border-divider-strong shrink-0">
                         {wSessions.map((s) => {
                           const locked = sourceRole !== 'officer' && s.statusWindow === 'closed';
                           const isFuture = s.statusWindow === 'closed' && s.date > todayStr();
@@ -851,7 +851,7 @@ export default function LnatkApp() {
                           const tone = (s.type === 'Practice' ? PRACTICE_TONE : CELL_TONE)[lg.status] ?? CELL_TONE.N;
 
                           return (
-                            <div key={s.id} className={`${CELL_WIDTH} border-r border-app flex items-center justify-center p-0.5`}>
+                            <div key={s.id} className={`${CELL_WIDTH} border-r border-divider flex items-center justify-center p-0.5`}>
                               {isFuture && sourceRole !== 'officer' ? (
                                 <div
                                   className="w-10 h-10 sm:h-8 rounded-md font-mono text-xs flex items-center justify-center border border-dashed border-app-strong text-app-muted opacity-40 cursor-not-allowed"
@@ -1137,33 +1137,33 @@ export default function LnatkApp() {
                   <p className="text-xs text-app-muted">LNATK District Attendance Platform</p>
                 </div>
 
-                <div className="rounded-[28px] border border-app bg-surface shadow-2xl overflow-hidden">
+                <div className="glass-panel overflow-hidden">
                   {loginStep === 'stack' && (
-                    <div className="divide-y divide-app">
+                    <div className="divide-y divide-divider">
                       <button
                         onClick={() => setLoginStep('tk')}
-                        className="w-full py-6 px-6 text-center hover:bg-surface-2 transition-colors"
+                        className="w-full py-5 px-6 text-center hover:bg-[var(--glass-strong)] transition-colors"
                       >
-                        <div className="text-lg font-semibold text-app">Regular TK</div>
-                        <div className="text-[11px] text-app-muted">
+                        <div className="text-base font-semibold text-app">Regular TK</div>
+                        <div className="text-[11px] text-app-muted mt-0.5">
                           Select your city & locale · View & edit locale table
                         </div>
                       </button>
                       <button
                         onClick={() => setLoginStep('coordinator')}
-                        className="w-full py-6 px-6 text-center hover:bg-surface-2 transition-colors"
+                        className="w-full py-5 px-6 text-center hover:bg-[var(--glass-strong)] transition-colors"
                       >
-                        <div className="text-lg font-semibold text-app">Coordinator</div>
-                        <div className="text-[11px] text-app-muted">
+                        <div className="text-base font-semibold text-app">Coordinator</div>
+                        <div className="text-[11px] text-app-muted mt-0.5">
                           Choose your locale + PIN · Submit TG roster & monthly report
                         </div>
                       </button>
                       <button
                         onClick={() => setLoginStep('officer')}
-                        className="w-full py-6 px-6 text-center hover:bg-surface-2 transition-colors"
+                        className="w-full py-5 px-6 text-center hover:bg-[var(--glass-strong)] transition-colors"
                       >
-                        <div className="text-lg font-semibold text-app">Officer</div>
-                        <div className="text-[11px] text-app-muted">
+                        <div className="text-base font-semibold text-app">Officer</div>
+                        <div className="text-[11px] text-app-muted mt-0.5">
                           District login · Full access to all 18 locales
                         </div>
                       </button>
@@ -1173,14 +1173,14 @@ export default function LnatkApp() {
                   {loginStep === 'tk' && (
                     <div className="p-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <button onClick={() => setLoginStep('stack')} className="text-xs text-app-muted hover:text-app">
+                        <button onClick={() => setLoginStep('stack')} className="text-xs text-app-muted hover:text-app transition-colors">
                           ← Back
                         </button>
-                        <span className="text-xs font-semibold uppercase text-brand-600">Regular TK</span>
+                        <span className="text-[11px] font-mono uppercase tracking-wider font-semibold text-brand-400">Regular TK</span>
                       </div>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium mb-1 text-app">Select City</label>
+                          <label className="block text-xs font-mono uppercase tracking-wider text-app-muted mb-1">Select City</label>
                           <select
                             value={selectedCity}
                             onChange={(e) => {
@@ -1189,7 +1189,7 @@ export default function LnatkApp() {
                               const first = locales.find((l) => l.city === city);
                               if (first) setSelectedLocaleId(first.id);
                             }}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-app bg-surface-2 text-xs font-semibold text-app"
+                            className={GLASS_SELECT}
                           >
                             <option value="Santa Rosa">Santa Rosa</option>
                             <option value="Biñan">Biñan</option>
@@ -1197,11 +1197,11 @@ export default function LnatkApp() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium mb-1 text-app">Select Locale</label>
+                          <label className="block text-xs font-mono uppercase tracking-wider text-app-muted mb-1">Select Locale</label>
                           <select
                             value={selectedLocaleId}
                             onChange={(e) => setSelectedLocaleId(Number(e.target.value))}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-app bg-surface-2 text-xs font-semibold text-app"
+                            className={GLASS_SELECT}
                           >
                             {cityLocales.map((l) => (
                               <option key={l.id} value={l.id}>
@@ -1213,7 +1213,7 @@ export default function LnatkApp() {
                       </div>
                       <button
                         onClick={() => setRole('tk')}
-                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold"
+                        className={GLASS_BTN_PRIMARY}
                       >
                         Enter Locale Table
                       </button>
@@ -1223,18 +1223,18 @@ export default function LnatkApp() {
                   {loginStep === 'coordinator' && (
                     <div className="p-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <button onClick={() => setLoginStep('stack')} className="text-xs text-app-muted hover:text-app">
+                        <button onClick={() => setLoginStep('stack')} className="text-xs text-app-muted hover:text-app transition-colors">
                           ← Back
                         </button>
-                        <span className="text-xs font-semibold uppercase text-brand-600">Coordinator</span>
+                        <span className="text-[11px] font-mono uppercase tracking-wider font-semibold text-brand-400">Coordinator</span>
                       </div>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium mb-1 text-app">Your Locale</label>
+                          <label className="block text-xs font-mono uppercase tracking-wider text-app-muted mb-1">Your Locale</label>
                           <select
                             value={coordLocaleId}
                             onChange={(e) => setCoordLocaleId(Number(e.target.value))}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-app bg-surface-2 text-base sm:text-xs font-semibold text-app"
+                            className={GLASS_SELECT}
                           >
                             {(['Santa Rosa', 'Biñan', 'San Pedro'] as CityName[]).map((city) => (
                               <optgroup key={city} label={city}>
@@ -1246,13 +1246,13 @@ export default function LnatkApp() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium mb-1 text-app">Coordinator PIN</label>
+                          <label className="block text-xs font-mono uppercase tracking-wider text-app-muted mb-1">Coordinator PIN</label>
                           <input
                             type="password"
                             inputMode="numeric"
                             value={coordPinInput}
                             onChange={(e) => setCoordPinInput(e.target.value)}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-app bg-surface-2 font-mono text-base sm:text-xs text-app"
+                            className={GLASS_INPUT}
                           />
                         </div>
                       </div>
@@ -1276,7 +1276,7 @@ export default function LnatkApp() {
                           setCoordTab('duty');
                           setRole('coordinator');
                         }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold"
+                        className={GLASS_BTN_PRIMARY}
                       >
                         Unlock Coordinator Account
                       </button>
@@ -1286,10 +1286,10 @@ export default function LnatkApp() {
                   {loginStep === 'officer' && (
                     <div className="p-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <button onClick={() => setLoginStep('stack')} className="text-xs text-app-muted hover:text-app">
+                        <button onClick={() => setLoginStep('stack')} className="text-xs text-app-muted hover:text-app transition-colors">
                           ← Back
                         </button>
-                        <span className="text-xs font-semibold uppercase text-brand-600">District Officer</span>
+                        <span className="text-[11px] font-mono uppercase tracking-wider font-semibold text-brand-400">District Officer</span>
                       </div>
                       <div className="space-y-3">
                         <input
@@ -1297,14 +1297,14 @@ export default function LnatkApp() {
                           placeholder="Officer email"
                           value={officerEmail}
                           onChange={(e) => setOfficerEmail(e.target.value)}
-                          className="w-full px-3.5 py-2 rounded-xl border border-app bg-surface-2 text-xs text-app"
+                          className={GLASS_INPUT}
                         />
                         <input
                           type="password"
                           placeholder="Password"
                           value={officerPassword}
                           onChange={(e) => setOfficerPassword(e.target.value)}
-                          className="w-full px-3.5 py-2 rounded-xl border border-app bg-surface-2 text-xs text-app"
+                          className={GLASS_INPUT}
                         />
                       </div>
                       <button
@@ -1325,7 +1325,7 @@ export default function LnatkApp() {
                           setRole('officer');
                           setOfficerTab('grid');
                         }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold disabled:opacity-60"
+                        className={GLASS_BTN_PRIMARY}
                       >
                         Sign In to Officer Workspace
                       </button>
@@ -1351,7 +1351,7 @@ export default function LnatkApp() {
                       const first = locales.find((l) => l.city === c);
                       if (first) setSelectedLocaleId(first.id);
                     }}
-                    className="px-3 py-1.5 rounded-lg border border-app bg-surface text-xs font-medium text-app"
+                    className="px-3 py-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] text-xs font-semibold text-app outline-none focus:border-brand-500 transition-colors"
                   >
                     <option value="Santa Rosa">Santa Rosa</option>
                     <option value="Biñan">Biñan</option>
@@ -1360,7 +1360,7 @@ export default function LnatkApp() {
                   <select
                     value={selectedLocaleId}
                     onChange={(e) => setSelectedLocaleId(Number(e.target.value))}
-                    className="px-3 py-1.5 rounded-lg border border-app bg-surface text-xs font-semibold text-app"
+                    className="px-3 py-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] text-xs font-semibold text-app outline-none focus:border-brand-500 transition-colors"
                   >
                     {cityLocales.map((l) => (
                       <option key={l.id} value={l.id}>
@@ -1373,29 +1373,29 @@ export default function LnatkApp() {
                     placeholder="Find your name..."
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
-                    className="px-3 py-1.5 w-44 rounded-lg border border-app bg-surface text-xs text-app placeholder:text-app-muted"
+                    className="px-3 py-1.5 w-48 rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] text-xs text-app placeholder:text-app-muted outline-none focus:border-brand-500 transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
-                  <div className="px-2.5 py-1 rounded-md bg-surface-2 border border-app">
+                  <div className="px-3 py-1 rounded-xl bg-[var(--glass)] border border-[var(--glass-border)]">
                     3-4 Weeks Duty: <strong className="text-emerald-500">{locSummary.duty34}</strong>
                   </div>
-                  <div className="px-2.5 py-1 rounded-md bg-surface-2 border border-app">
+                  <div className="px-3 py-1 rounded-xl bg-[var(--glass)] border border-[var(--glass-border)]">
                     1-2 Weeks Duty: <strong className="text-brand-400">{locSummary.duty12}</strong>
                   </div>
-                  <div className="px-2.5 py-1 rounded-md bg-surface-2 border border-app">
+                  <div className="px-3 py-1 rounded-xl bg-[var(--glass)] border border-[var(--glass-border)]">
                     No Duty: <strong className="text-rose-400">{locSummary.noDuty}</strong>
                   </div>
                 </div>
               </div>
 
-              <div className="border border-app rounded-xl bg-surface overflow-hidden shadow-sm">
-                <div className="px-4 py-2.5 bg-surface-2 border-b border-app flex items-center justify-between text-xs">
+              <div className="glass-panel overflow-hidden">
+                <div className="px-4 py-3 bg-[var(--glass-strong)] border-b border-divider flex items-center justify-between text-xs">
                   <span className="font-semibold text-app">
                     {currentLocale.city} — Locale of {currentLocale.name} Regular Duty Sheet
                   </span>
-                  <span className="font-mono text-[11px] text-brand-700 dark:text-brand-300 bg-brand-500/10 px-2 py-0.5 rounded">
+                  <span className="font-mono text-[11px] text-brand-400 bg-brand-500/10 px-2.5 py-0.5 rounded-full border border-brand-500/20">
                     Regular TK · Click Any Cell to Edit
                   </span>
                 </div>
@@ -1406,13 +1406,15 @@ export default function LnatkApp() {
 
           {/* VIEW 3: COORDINATOR VIEW */}
           {role === 'coordinator' && (
-            <div className="flex gap-1.5 mb-4 p-1 rounded-xl bg-surface-2 border border-app w-fit">
+            <div className="flex gap-1.5 mb-4 p-1 rounded-2xl glass-panel w-fit">
               {([['duty', 'Duty Sheet'], ['report', 'Monthly Report']] as const).map(([id, lbl]) => (
                 <button
                   key={id}
                   onClick={() => setCoordTab(id)}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                    coordTab === id ? 'bg-surface text-app shadow-sm border border-app' : 'text-app-muted hover:text-app'
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    coordTab === id
+                      ? 'bg-[var(--glass-strong)] text-app shadow-sm border border-[var(--glass-border)]'
+                      : 'text-app-muted hover:text-app'
                   }`}
                 >
                   {lbl}
@@ -1433,77 +1435,79 @@ export default function LnatkApp() {
           )}
           {role === 'coordinator' && coordTab === 'duty' && (
             <section className="space-y-4">
-              <div className="max-w-xl mx-auto w-full border border-app rounded-xl bg-surface p-4 sm:p-5 space-y-4 shadow-sm">
-                <div className="border-b border-app pb-3">
-                  <h2 className="text-sm font-semibold text-app">Batch {liveTg?.type === 'SPBB' ? 'SPBB' : 'TG'} Duty Roster</h2>
-                  <p className="text-xs text-app-muted">
+              <div className="max-w-xl mx-auto w-full">
+                <GlassPanel
+                  title={`Batch ${liveTg?.type === 'SPBB' ? 'SPBB' : 'TG'} Duty Roster`}
+                  meta={liveTg ? 'Live Session' : 'Roster Inactive'}
+                >
+                  <p className="text-xs text-app-muted mb-4">
                     Mark multiple members for the live {liveTg?.type === 'SPBB' ? 'SPBB day' : 'TG'} at once and submit to the locale table.
                   </p>
-                </div>
 
-                <div className="flex items-center justify-between gap-2 rounded-lg border border-app bg-surface-2 px-3.5 py-2.5 text-xs text-app">
-                  <span className="text-app-muted">Session</span>
-                  {liveTg ? (
-                    <span className="font-semibold flex items-center gap-1.5">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      {liveTg.label} · {liveTg.date} · Live now
-                    </span>
-                  ) : (
-                    <span className="font-semibold text-amber-600 dark:text-amber-400">Not live</span>
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] px-3.5 py-2.5 text-xs text-app mb-4">
+                    <span className="text-app-muted">Session</span>
+                    {liveTg ? (
+                      <span className="font-semibold flex items-center gap-1.5">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        {liveTg.label} · {liveTg.date} · Live now
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-amber-500">Not live</span>
+                    )}
+                  </div>
+                  {!liveTg && (
+                    <p className="text-xs text-app-muted">
+                      This roster is only open while the TG or an SPBB day is live. Outside of that, use the duty sheet below or ask an officer.
+                    </p>
                   )}
-                </div>
-                {!liveTg && (
-                  <p className="text-xs text-app-muted">
-                    This roster is only open while the TG or an SPBB day is live. Outside of that, use the duty sheet below or ask an officer.
-                  </p>
-                )}
 
-                {liveTg && (
-                  <>
-                <div className="divide-y divide-app rounded-lg border border-app bg-surface max-h-96 overflow-y-auto">
-                  {members
-                    .filter((m) => m.localeId === currentLocale.id && !m.leftAt)
-                    .map((m) => {
-                      const cur = coordDraft[m.id] ?? logs[`${m.id}_${coordSessionId}`]?.status ?? 'N';
-                      return (
-                        <div key={m.id} className="px-3.5 py-2.5 flex items-center justify-between text-xs hover:bg-surface-2 transition-colors">
-                          <span className="font-medium text-app">{m.fullName}</span>
-                          <div className="flex items-center gap-1">
-                            {(['S', 'P', 'D', 'A'] as AttendanceStatus[]).filter((st) => liveTg?.allowed.includes(st)).map((st) => (
-                              <button
-                                key={st}
-                                onClick={() => setCoordDraft((prev) => ({ ...prev, [m.id]: st }))}
-                                className={`w-7 h-7 rounded font-mono text-xs font-semibold border ${
-                                  cur === st
-                                    ? 'bg-brand-800 text-white border-brand-700'
-                                    : 'bg-surface-2 border-app text-app hover:bg-surface'
-                                }`}
-                              >
-                                {st}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
+                  {liveTg && (
+                    <>
+                      <div className="divide-y divide-divider rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] max-h-96 overflow-y-auto mb-4">
+                        {members
+                          .filter((m) => m.localeId === currentLocale.id && !m.leftAt)
+                          .map((m) => {
+                            const cur = coordDraft[m.id] ?? logs[`${m.id}_${coordSessionId}`]?.status ?? 'N';
+                            return (
+                              <div key={m.id} className="px-3.5 py-2.5 flex items-center justify-between text-xs hover:bg-[var(--glass-strong)] transition-colors">
+                                <span className="font-medium text-app">{m.fullName}</span>
+                                <div className="flex items-center gap-1">
+                                  {(['S', 'P', 'D', 'A'] as AttendanceStatus[]).filter((st) => liveTg?.allowed.includes(st)).map((st) => (
+                                    <button
+                                      key={st}
+                                      onClick={() => setCoordDraft((prev) => ({ ...prev, [m.id]: st }))}
+                                      className={`w-7 h-7 rounded-lg font-mono text-xs font-semibold border transition-all ${
+                                        cur === st
+                                          ? 'bg-brand-600 text-white border-brand-500 shadow-sm'
+                                          : 'bg-[var(--glass)] border-[var(--glass-border)] text-app hover:bg-[var(--glass-strong)]'
+                                      }`}
+                                    >
+                                      {st}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
 
-                <button
-                  onClick={handleCoordinatorBatchSubmit}
-                  className="w-full py-2 px-4 rounded-lg bg-brand-800 hover:bg-brand-700 text-white font-semibold text-xs"
-                >
-                  Submit Coordinator Batch
-                </button>
-                  </>
-                )}
+                      <button
+                        onClick={handleCoordinatorBatchSubmit}
+                        className={GLASS_BTN_PRIMARY}
+                      >
+                        Submit Coordinator Batch
+                      </button>
+                    </>
+                  )}
+                </GlassPanel>
               </div>
 
-              <div className="border border-app rounded-xl bg-surface overflow-hidden shadow-sm">
-                <div className="px-4 py-3 bg-surface-2 border-b border-app flex items-center justify-between text-xs">
+              <div className="glass-panel overflow-hidden">
+                <div className="px-4 py-3 bg-[var(--glass-strong)] border-b border-divider flex items-center justify-between text-xs">
                   <span className="font-semibold text-app">
                     {currentLocale.city} — Locale of {currentLocale.name} Regular Duty Sheet
                   </span>
-                  <span className="font-mono text-[11px] text-brand-700 dark:text-brand-300 bg-brand-500/10 px-2 py-0.5 rounded">
+                  <span className="font-mono text-[11px] text-brand-400 bg-brand-500/10 px-2.5 py-0.5 rounded-full border border-brand-500/20">
                     Editable Table · Auto-Syncs
                   </span>
                 </div>
@@ -1515,7 +1519,7 @@ export default function LnatkApp() {
           {/* VIEW 4: OFFICER WORKSPACE */}
           {role === 'officer' && officerTab === 'grid' && (
             <section className="space-y-4">
-              <div className="border border-app rounded-xl bg-surface overflow-hidden shadow-sm">
+              <div className="glass-panel overflow-hidden">
                 {renderEditableDutyTable('officer')}
               </div>
             </section>
@@ -1523,42 +1527,41 @@ export default function LnatkApp() {
 
           {role === 'officer' && officerTab === 'dashboard' && (
             <section className="space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <h3 className="text-sm font-semibold text-app">All Locales — {reportMonthLabel}</h3>
                 <div className="flex gap-2">
-                  <button onClick={handleDownloadExcel} className="px-3 py-2 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold">
+                  <button onClick={handleDownloadExcel} className={GLASS_BTN_PRIMARY}>
                     Download Excel
                   </button>
-                  <button onClick={handleDownloadPdf} className="px-3 py-2 rounded-lg border border-app bg-surface-2 hover:bg-surface text-app text-xs font-semibold">
+                  <button onClick={handleDownloadPdf} className={GLASS_BTN}>
                     Download PDF
                   </button>
                 </div>
               </div>
               {(['Santa Rosa', 'Biñan', 'San Pedro'] as CityName[]).map((city) => (
-                <div
+                <GlassPanel
                   key={city}
-                  className="border border-app rounded-xl bg-surface overflow-hidden shadow-sm"
+                  title={city}
+                  meta="Monthly Breakdown"
+                  bodyClassName="p-0 overflow-x-auto"
                 >
-                  <div className="px-4 py-3 bg-surface-2 border-b border-app-strong font-semibold text-sm text-app">
-                    {city}
-                  </div>
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-surface-2 border-b border-app-strong text-app-muted">
+                    <thead className="bg-[var(--glass-strong)] border-b border-divider font-mono uppercase text-[10px] text-app-muted">
                       <tr>
-                        <th className="py-2 px-4">Locale</th>
-                        <th className="py-2 px-3 text-right">3–4 Weeks</th>
-                        <th className="py-2 px-3 text-right">1–2 Weeks</th>
-                        <th className="py-2 px-3 text-right">No Duty</th>
-                        <th className="py-2 px-4 text-right">Total</th>
+                        <th className="py-2.5 px-4">Locale</th>
+                        <th className="py-2.5 px-3 text-right">3–4 Weeks</th>
+                        <th className="py-2.5 px-3 text-right">1–2 Weeks</th>
+                        <th className="py-2.5 px-3 text-right">No Duty</th>
+                        <th className="py-2.5 px-4 text-right">Total</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-app">
+                    <tbody className="divide-y divide-divider">
                       {locales
                         .filter((l) => l.city === city)
                         .map((loc, idx) => {
                           const s = computeLocaleSummary(loc.id);
                           return (
-                            <tr key={loc.id} className={`transition-colors hover:bg-surface-2 ${idx % 2 === 1 ? 'bg-surface-2-subtle' : ''}`}>
+                            <tr key={loc.id} className={`transition-colors hover:bg-[var(--glass-strong)] ${idx % 2 === 1 ? 'bg-[var(--glass)]' : ''}`}>
                               <td className="py-2.5 px-4 font-medium text-app">{loc.name}</td>
                               <td className="py-2.5 px-3 text-right font-mono text-emerald-500 font-semibold">
                                 {s.duty34}
@@ -1575,14 +1578,14 @@ export default function LnatkApp() {
                         })}
                     </tbody>
                   </table>
-                </div>
+                </GlassPanel>
               ))}
             </section>
           )}
 
           {role === 'officer' && officerTab === 'inbox' && (
             <section className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <h3 className="text-sm font-semibold text-app">Live Venue Board (Saturday TG — Per Locale)</h3>
                 <div className="flex items-center gap-2">
                   <select
@@ -1591,7 +1594,7 @@ export default function LnatkApp() {
                       setLiveCityFilter(e.target.value);
                       setLiveLocaleFilter('ALL');
                     }}
-                    className="px-2.5 py-1 rounded-lg border border-app bg-surface text-xs text-app"
+                    className="px-3 py-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] text-xs text-app outline-none focus:border-brand-500 transition-colors"
                   >
                     <option value="ALL">All Cities (3)</option>
                     <option value="Santa Rosa">Santa Rosa (7)</option>
@@ -1601,7 +1604,7 @@ export default function LnatkApp() {
                   <select
                     value={liveLocaleFilter}
                     onChange={(e) => setLiveLocaleFilter(e.target.value)}
-                    className="px-2.5 py-1 rounded-lg border border-app bg-surface text-xs font-semibold text-app"
+                    className="px-3 py-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass)] text-xs font-semibold text-app outline-none focus:border-brand-500 transition-colors"
                   >
                     <option value="ALL">All Locales (Per-Locale View)</option>
                     {locales
@@ -1625,28 +1628,24 @@ export default function LnatkApp() {
                   .map((loc) => {
                     const locMembers = members.filter((m) => m.localeId === loc.id && !m.leftAt);
                     return (
-                      <div
+                      <GlassPanel
                         key={loc.id}
-                        className="rounded-xl border border-app bg-surface overflow-hidden shadow-sm"
+                        title={`${loc.city} — ${loc.name}`}
+                        meta={loc.code}
+                        bodyClassName="p-0"
                       >
-                        <div className="px-4 py-2.5 bg-surface-2 border-b border-app flex items-center justify-between text-xs text-app">
-                          <span className="font-semibold">
-                            {loc.city} — {loc.name}
-                          </span>
-                          <span className="font-mono text-[10px] text-app-muted">{loc.code}</span>
-                        </div>
-                        <div className="divide-y divide-app">
+                        <div className="divide-y divide-divider">
                           {locMembers.map((m, mIdx) => {
                             const lg = logs[`${m.id}_${liveTgId}`] ?? { status: 'N', source: 'self' };
                             return (
-                              <div key={m.id} className={`px-4 py-2 flex items-center justify-between text-xs text-app ${mIdx % 2 === 1 ? 'bg-surface-2-subtle' : ''}`}>
+                              <div key={m.id} className={`px-4 py-2 flex items-center justify-between text-xs text-app transition-colors hover:bg-[var(--glass-strong)] ${mIdx % 2 === 1 ? 'bg-[var(--glass)]' : ''}`}>
                                 <span>{m.fullName}</span>
                                 <span className="font-mono font-bold">{lg.status}</span>
                               </div>
                             );
                           })}
                         </div>
-                      </div>
+                      </GlassPanel>
                     );
                   })}
               </div>
@@ -1694,7 +1693,7 @@ export default function LnatkApp() {
       </div>
 
       {toastMsg && (
-        <div role="status" aria-live="polite" className="fixed bottom-4 left-4 right-4 sm:left-auto sm:max-w-sm z-50 px-4 py-3 rounded-xl bg-zinc-900 dark:bg-obsidian-800 text-white text-sm sm:text-xs font-medium shadow-lg" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
+        <div role="status" aria-live="polite" className="fixed bottom-4 left-4 right-4 sm:left-auto sm:max-w-sm z-50 px-4 py-3 rounded-2xl glass-panel text-app text-sm sm:text-xs font-medium shadow-lg" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
           {toastMsg}
         </div>
       )}
