@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CityName, LocaleItem, MemberItem, TK_CATEGORY_LABELS, TkCategory } from '../types/lnatk';
-import MagicBento from './MagicBento';
+import { Panel, StatStrip, LEDGER_INPUT, LEDGER_SELECT } from './ledger/LedgerComponents';
 
 interface Props {
   members: MemberItem[];
@@ -24,168 +24,39 @@ const BUCKETS = [
 ] as const;
 type BucketKey = (typeof BUCKETS)[number]['key'];
 
-const select =
-  'px-3 py-2 rounded-lg border border-app bg-surface text-app text-base sm:text-xs';
-const card = 'border border-app rounded-xl bg-surface p-4 shadow-sm';
-
-function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
-  return (
-    <div className="flex flex-col justify-between h-full bg-transparent">
-      <div className="text-[11px] font-semibold text-app-muted uppercase tracking-wider">{label}</div>
-      <div className="text-3xl font-bold font-mono tracking-tight" style={{ color: color ?? 'inherit' }}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function Donut({ counts, total }: { counts: Record<Status, number>; total: number }) {
-  const R = 42;
-  const C = 2 * Math.PI * R;
-  let offset = 0;
-  return (
-    <svg viewBox="0 0 120 120" className="w-40 h-40 shrink-0" role="img"
-      aria-label={`Active ${counts.active}, inactive ${counts.inactive}, on hold ${counts.hold}, of ${total} TKs`}>
-      <circle cx="60" cy="60" r={R} fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="16" />
-      {total > 0 &&
-        (Object.keys(STATUS_META) as Status[]).map((k) => {
-          const len = (counts[k] / total) * C;
-          const el = (
-            <circle key={k} cx="60" cy="60" r={R} fill="none" stroke={STATUS_META[k].color} strokeWidth="16"
-              strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset} transform="rotate(-90 60 60)" />
-          );
-          offset += len;
-          return el;
-        })}
-      <text x="60" y="58" textAnchor="middle" className="fill-current text-app" fontSize="22" fontWeight="700">{total}</text>
-      <text x="60" y="74" textAnchor="middle" className="fill-current text-app-muted" fontSize="9" opacity="0.7">TKs</text>
-    </svg>
-  );
-}
-
-function StatusDonutCard({ counts, total }: { counts: Record<Status, number>; total: number }) {
-  return (
-    <div className="flex flex-col justify-between h-full space-y-3 bg-transparent">
-      <h4 className="text-xs font-semibold text-app">Active, inactive and on hold</h4>
-      <div className="flex flex-wrap items-center gap-4 my-auto">
-        <Donut counts={counts} total={total} />
-        <ul className="space-y-1.5 text-sm">
-          {(Object.keys(STATUS_META) as Status[]).map((k) => (
-            <li key={k} className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: STATUS_META[k].color }} />
-              <span className="text-app">{STATUS_META[k].label}</span>
-              <span className="font-mono font-semibold text-app">{counts[k]}</span>
-              <span className="text-xs text-app-muted">{total ? Math.round((counts[k] / total) * 100) : 0}%</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
 function StackBar({ parts, max }: { parts: Array<{ label: string; color: string; n: number }>; max: number }) {
   const total = parts.reduce((a, p) => a + p.n, 0);
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-6 rounded-md bg-surface-2 border border-app overflow-hidden flex" style={{ maxWidth: '100%' }}>
+      <div className="flex-1 h-2.5 bg-surface-2 border border-app overflow-hidden flex">
         <div className="flex h-full" style={{ width: `${max ? (total / max) * 100 : 0}%` }}>
           {parts.map((p) =>
             p.n > 0 ? (
-              <div key={p.label} title={`${p.label}: ${p.n}`} className="h-full flex items-center justify-center text-[10px] font-semibold text-white"
-                style={{ width: `${(p.n / total) * 100}%`, background: p.color }}>
-                {p.n}
-              </div>
+              <div
+                key={p.label}
+                title={`${p.label}: ${p.n}`}
+                className="h-full"
+                style={{ width: `${(p.n / total) * 100}%`, background: p.color }}
+              />
             ) : null
           )}
         </div>
       </div>
-      <span className="w-8 text-right text-xs font-mono text-app">{total}</span>
+      <span className="w-8 text-right font-mono text-xs tabular-nums text-app">{total}</span>
     </div>
   );
 }
 
 const Legend = ({ items }: { items: Array<{ label: string; color: string }> }) => (
-  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-app-muted">
+  <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono uppercase text-[10px] tracking-[0.06em] text-app-muted pt-1">
     {items.map((i) => (
       <span key={i.label} className="inline-flex items-center gap-1.5">
-        <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: i.color }} />{i.label}
+        <span className="w-2 h-2 shrink-0" style={{ background: i.color }} />
+        {i.label}
       </span>
     ))}
   </div>
 );
-
-function ByCategoryBarsCard({
-  categories,
-  rows,
-  catMax,
-}: {
-  categories: TkCategory[];
-  rows: Array<{ category: TkCategory; status: Status }>;
-  catMax: number;
-}) {
-  return (
-    <div className="flex flex-col justify-between h-full space-y-3 bg-transparent">
-      <h4 className="text-xs font-semibold text-app">By category</h4>
-      <div className="space-y-3 my-auto">
-        {categories.map((c) => {
-          const cr = rows.filter((r) => r.category === c);
-          return (
-            <div key={c} className="space-y-1">
-              <div className="text-xs text-app">{TK_CATEGORY_LABELS[c]}</div>
-              <StackBar
-                max={catMax}
-                parts={(Object.keys(STATUS_META) as Status[]).map((k) => ({
-                  label: STATUS_META[k].label,
-                  color: STATUS_META[k].color,
-                  n: cr.filter((r) => r.status === k).length,
-                }))}
-              />
-            </div>
-          );
-        })}
-      </div>
-      <Legend items={(Object.keys(STATUS_META) as Status[]).map((k) => STATUS_META[k])} />
-    </div>
-  );
-}
-
-function StatusesByCityCard({
-  groups,
-  groupMax,
-  localeId,
-  city,
-}: {
-  groups: Array<{ name: string; rows: Array<{ bucket: BucketKey }> }>;
-  groupMax: number;
-  localeId: number | 'all';
-  city: 'all' | CityName;
-}) {
-  return (
-    <div className="flex flex-col justify-between h-full space-y-3 bg-transparent">
-      <h4 className="text-xs font-semibold text-app">
-        Total of statuses{localeId === 'all' && city === 'all' ? ' by city' : localeId === 'all' ? ` in ${city}` : ''}
-      </h4>
-      <div className="space-y-3 my-auto">
-        {groups.map((g) => (
-          <div key={g.name} className="space-y-1">
-            <div className="text-xs text-app">{g.name}</div>
-            <StackBar
-              max={groupMax}
-              parts={BUCKETS.map((b) => ({
-                label: b.label,
-                color: b.color,
-                n: g.rows.filter((r) => r.bucket === b.key).length,
-              }))}
-            />
-          </div>
-        ))}
-        {groups.length === 0 && <p className="text-xs text-app-muted">No TKs yet.</p>}
-      </div>
-      <Legend items={BUCKETS.map((b) => ({ label: b.label, color: b.color }))} />
-    </div>
-  );
-}
 
 /** Sort by city, then locale, then last word of fullName, then first name. */
 const dirSort = (a: { city: string; locale: string; fullName: string }, b: { city: string; locale: string; fullName: string }) => {
@@ -197,57 +68,46 @@ const dirSort = (a: { city: string; locale: string; fullName: string }, b: { cit
 
 function DirectoryTable({ title, rows, emptyMsg }: { title: string; rows: Array<{ fullName: string; locale: string; city: string }>; emptyMsg: string }) {
   return (
-    <div className={`${card} space-y-2`}>
-      <h4 className="text-xs font-semibold text-app">{title} <span className="font-mono text-app-muted">({rows.length})</span></h4>
+    <Panel title={title} meta={`${rows.length} RECORD${rows.length === 1 ? '' : 'S'}`} bodyClassName="p-0">
       {rows.length === 0 ? (
-        <p className="text-xs text-app-muted">{emptyMsg}</p>
+        <div className="p-4 text-xs font-mono text-app-muted">{emptyMsg}</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-96">
           <table className="w-full text-left text-xs border-separate border-spacing-0">
             <thead>
-              <tr className="sticky top-0 z-10 bg-surface-2 border-b border-app-strong text-app-muted">
-                <th className="py-2 px-2 font-mono text-[10px] w-8">#</th>
-                <th className="py-2 px-2 font-semibold whitespace-nowrap">Name</th>
-                <th className="py-2 px-2 font-semibold whitespace-nowrap">Locale</th>
-                <th className="py-2 px-2 font-semibold whitespace-nowrap">City</th>
+              <tr className="sticky top-0 z-10 bg-surface-2 border-b border-app-strong font-mono uppercase text-[11px] tracking-[0.06em] text-app-muted">
+                <th className="py-2 px-2.5 font-mono text-[10px] w-10 text-right">#</th>
+                <th className="py-2 px-3 font-semibold whitespace-nowrap">Name</th>
+                <th className="py-2 px-3 font-semibold whitespace-nowrap">Locale</th>
+                <th className="py-2 px-3 font-semibold whitespace-nowrap">City</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={`${r.fullName}-${r.locale}-${i}`} className={`h-11 border-b border-app hover:bg-surface-2 transition-colors ${i % 2 === 1 ? 'bg-surface-2-subtle' : ''}`}>
-                  <td className="px-2 font-mono text-[11px] text-app-muted tabular-nums">{i + 1}</td>
-                  <td className="px-2 whitespace-nowrap font-medium text-app">{r.fullName}</td>
-                  <td className="px-2 whitespace-nowrap text-app-muted">{r.locale}</td>
-                  <td className="px-2 whitespace-nowrap text-app-muted">{r.city}</td>
+                <tr
+                  key={`${r.fullName}-${r.locale}-${i}`}
+                  className={`h-11 sm:h-9 border-b border-app hover:bg-surface-2 transition-colors ${
+                    i % 2 === 1 ? 'bg-surface-2-subtle' : 'bg-surface'
+                  }`}
+                >
+                  <td className="px-2.5 font-mono text-[11px] text-app-muted tabular-nums text-right">{i + 1}</td>
+                  <td className="px-3 whitespace-nowrap font-medium text-app">{r.fullName}</td>
+                  <td className="px-3 whitespace-nowrap text-app-muted">{r.locale}</td>
+                  <td className="px-3 whitespace-nowrap font-mono text-[11px] text-app-muted uppercase tracking-[0.06em]">{r.city}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-    </div>
+    </Panel>
   );
 }
 
-export default function TkOverview({ members, locales, rollup, monthLabel, isDark: isDarkProp }: Props) {
+export default function TkOverview({ members, locales, rollup, monthLabel }: Props) {
   const [city, setCity] = useState<'all' | CityName>('all');
   const [localeId, setLocaleId] = useState<number | 'all'>('all');
   const [dirSearch, setDirSearch] = useState('');
-
-  const [systemDark, setSystemDark] = useState(() =>
-    typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : true
-  );
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const observer = new MutationObserver(() => {
-      setSystemDark(document.documentElement.classList.contains('dark'));
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
-
-  const isDark = isDarkProp ?? systemDark;
 
   // Directory tables: district TKs and trainees with locale / city info
   const directoryRows = useMemo(() => {
@@ -305,66 +165,180 @@ export default function TkOverview({ members, locales, rollup, monthLabel, isDar
   const groupMax = Math.max(1, ...groups.map((g) => g.rows.length));
 
   const cityLocales = locales.filter((l) => city === 'all' || l.city === city);
-  const cityRowSpan = groups.length > 5 ? 4 : 3;
 
   return (
     <section className="max-w-4xl mx-auto space-y-4 select-text">
+      {/* 1. Title and Filters Row */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-app">TK Overview — {monthLabel}</h3>
-          <p className="text-[11px] text-app-muted">Active = at least one duty in the month · Inactive = no duty · Hold is set by officers in Members.</p>
+          <h2 className="font-mono uppercase font-bold text-xs sm:text-sm tracking-[0.06em] text-app">
+            TK OVERVIEW — {monthLabel}
+          </h2>
+          <p className="font-mono text-[11px] text-app-muted tracking-[0.06em] mt-0.5">
+            ACTIVE = ≥1 DUTY · INACTIVE = 0 DUTY · HOLD = OFFICER FLAGGED
+          </p>
         </div>
-        <div className="flex gap-2">
-          <select className={select} aria-label="City" value={city} onChange={(e) => { setCity(e.target.value as 'all' | CityName); setLocaleId('all'); }}>
-            <option value="all">All cities</option>
-            {(['Santa Rosa', 'Biñan', 'San Pedro'] as CityName[]).map((c) => <option key={c} value={c}>{c}</option>)}
+        <div className="flex items-center gap-2">
+          <select
+            className={LEDGER_SELECT}
+            aria-label="City"
+            value={city}
+            onChange={(e) => {
+              setCity(e.target.value as 'all' | CityName);
+              setLocaleId('all');
+            }}
+          >
+            <option value="all">ALL CITIES</option>
+            {(['Santa Rosa', 'Biñan', 'San Pedro'] as CityName[]).map((c) => (
+              <option key={c} value={c}>{c.toUpperCase()}</option>
+            ))}
           </select>
-          <select className={select} aria-label="Locale" value={localeId} onChange={(e) => setLocaleId(e.target.value === 'all' ? 'all' : Number(e.target.value))}>
-            <option value="all">All locales</option>
-            {cityLocales.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+          <select
+            className={LEDGER_SELECT}
+            aria-label="Locale"
+            value={localeId}
+            onChange={(e) => setLocaleId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+          >
+            <option value="all">ALL LOCALES</option>
+            {cityLocales.map((l) => (
+              <option key={l.id} value={l.id}>{l.name.toUpperCase()}</option>
+            ))}
           </select>
         </div>
       </div>
 
-      <MagicBento
-        theme={isDark ? 'dark' : 'light'}
-        columns={4}
-        rowHeight={120}
-        gap={12}
-        radius={16}
-        glowColor="#8b5cf6"
-        enableBorderGlow
-        enableSpotlight
-        spotlightRadius={260}
-        enableStars={false}
-        enableTilt={false}
-        enableMagnetism={false}
-        clickEffect={false}
-        intro
+      {/* 2. StatStrip */}
+      <StatStrip
         items={[
-          { content: <StatCard label="Total TKs" value={total} /> },
-          { content: <StatCard label="Active" value={counts.active} color={STATUS_META.active.color} /> },
-          { content: <StatCard label="Inactive" value={counts.inactive} color={STATUS_META.inactive.color} /> },
-          { content: <StatCard label="On hold" value={counts.hold} color={STATUS_META.hold.color} /> },
-          { content: <StatusDonutCard counts={counts} total={total} />, colSpan: 2, rowSpan: 3 },
-          { content: <ByCategoryBarsCard categories={categories} rows={rows} catMax={catMax} />, colSpan: 2, rowSpan: 3 },
-          { content: <StatusesByCityCard groups={groups} groupMax={groupMax} localeId={localeId} city={city} />, colSpan: 4, rowSpan: cityRowSpan },
+          { label: 'Total TKs', value: total },
+          { label: 'Active', value: counts.active, color: STATUS_META.active.color },
+          { label: 'Inactive', value: counts.inactive, color: STATUS_META.inactive.color },
+          { label: 'On hold', value: counts.hold, color: STATUS_META.hold.color },
         ]}
       />
 
-      {/* Directory section: District TK and Trainees */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-app">Directory</h3>
-        <input
-          type="text"
-          placeholder="Search by name, locale, or city…"
-          value={dirSearch}
-          onChange={(e) => setDirSearch(e.target.value)}
-          className="w-full max-w-xs px-3 py-2 rounded-lg border border-app bg-surface text-xs text-app placeholder:text-app-muted"
-        />
+      {/* 3. Two-Column Row: Status Breakdown & By Category */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Status Breakdown Panel */}
+        <Panel title="STATUS BREAKDOWN" meta={`${total} TOTAL`}>
+          <div className="space-y-4">
+            {/* Horizontal segmented bar, 12px high, square ends */}
+            <div className="h-3 bg-surface-2 border border-app overflow-hidden flex">
+              {total > 0 && (
+                <>
+                  <div
+                    title={`Active: ${counts.active}`}
+                    style={{
+                      width: `${(counts.active / total) * 100}%`,
+                      background: STATUS_META.active.color,
+                    }}
+                    className="h-full"
+                  />
+                  <div
+                    title={`Inactive: ${counts.inactive}`}
+                    style={{
+                      width: `${(counts.inactive / total) * 100}%`,
+                      background: STATUS_META.inactive.color,
+                    }}
+                    className="h-full"
+                  />
+                  <div
+                    title={`On hold: ${counts.hold}`}
+                    style={{
+                      width: `${(counts.hold / total) * 100}%`,
+                      background: STATUS_META.hold.color,
+                    }}
+                    className="h-full"
+                  />
+                </>
+              )}
+            </div>
+
+            {/* Mono legend row with count and percent per status */}
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-app text-xs font-mono">
+              {(Object.keys(STATUS_META) as Status[]).map((k) => (
+                <div key={k} className="flex flex-col">
+                  <div className="flex items-center gap-1.5 uppercase text-[10px] tracking-[0.06em] text-app-muted">
+                    <span className="w-2 h-2 shrink-0" style={{ background: STATUS_META[k].color }} />
+                    <span>{STATUS_META[k].label}</span>
+                  </div>
+                  <div className="text-base font-bold tabular-nums mt-1" style={{ color: STATUS_META[k].color }}>
+                    {counts[k]}
+                    <span className="text-[10px] font-normal text-app-muted ml-1">
+                      ({total ? Math.round((counts[k] / total) * 100) : 0}%)
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Panel>
+
+        {/* By Category Panel */}
+        <Panel title="BY CATEGORY" meta={`${categories.length} GROUPS`}>
+          <div className="space-y-3">
+            {categories.map((c) => {
+              const cr = rows.filter((r) => r.category === c);
+              return (
+                <div key={c} className="space-y-1">
+                  <div className="font-mono uppercase text-[11px] tracking-[0.06em] text-app-muted">
+                    {TK_CATEGORY_LABELS[c]}
+                  </div>
+                  <StackBar
+                    max={catMax}
+                    parts={(Object.keys(STATUS_META) as Status[]).map((k) => ({
+                      label: STATUS_META[k].label,
+                      color: STATUS_META[k].color,
+                      n: cr.filter((r) => r.status === k).length,
+                    }))}
+                  />
+                </div>
+              );
+            })}
+            <Legend items={(Object.keys(STATUS_META) as Status[]).map((k) => STATUS_META[k])} />
+          </div>
+        </Panel>
+      </div>
+
+      {/* 4. Statuses by City Panel */}
+      <Panel
+        title={`TOTAL OF STATUSES${localeId === 'all' && city === 'all' ? ' BY CITY' : localeId === 'all' ? ` IN ${city.toUpperCase()}` : ''}`}
+        meta={`${groups.length} ENTRIES`}
+      >
+        <div className="space-y-3">
+          {groups.map((g) => (
+            <div key={g.name} className="space-y-1">
+              <div className="font-mono uppercase text-[11px] tracking-[0.06em] text-app-muted">{g.name}</div>
+              <StackBar
+                max={groupMax}
+                parts={BUCKETS.map((b) => ({
+                  label: b.label,
+                  color: b.color,
+                  n: g.rows.filter((r) => r.bucket === b.key).length,
+                }))}
+              />
+            </div>
+          ))}
+          {groups.length === 0 && <p className="text-xs font-mono text-app-muted">No TKs found for selection.</p>}
+          <Legend items={BUCKETS.map((b) => ({ label: b.label, color: b.color }))} />
+        </div>
+      </Panel>
+
+      {/* 5. Directory Section */}
+      <div className="space-y-3 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="font-mono uppercase font-bold text-xs tracking-[0.06em] text-app">DIRECTORY</div>
+          <input
+            type="text"
+            placeholder="SEARCH BY NAME, LOCALE, OR CITY…"
+            value={dirSearch}
+            onChange={(e) => setDirSearch(e.target.value)}
+            className={`${LEDGER_INPUT} w-full sm:w-64`}
+          />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <DirectoryTable title="District TK" rows={districtRows} emptyMsg="No district TKs yet" />
-          <DirectoryTable title="Trainees" rows={traineeRows} emptyMsg="No trainees yet" />
+          <DirectoryTable title="DISTRICT TK" rows={districtRows} emptyMsg="No district TKs found" />
+          <DirectoryTable title="TRAINEES" rows={traineeRows} emptyMsg="No trainees found" />
         </div>
       </div>
     </section>
